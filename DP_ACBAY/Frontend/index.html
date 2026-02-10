@@ -3,57 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CO2 Fußabdruck Rechner</title>
+    <title>EVN AG | CO2 Dashboard</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/htmx.org"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="header">
-        <h1>🌍 CO2 Fußabdruck Rechner</h1>
-    </div>
+    <header class="hero">
+        <div class="hero-inner">
+            <div class="hero-brand">
+                <span class="pill">EVN AG</span>
+                <h1>CO2 Emissions-Dashboard</h1>
+                <p>Login, um die Umfrage-Daten und berechneten CO2-Werte pro Mitarbeiter zu sehen.</p>
+            </div>
+            <div class="hero-metric">
+                <div class="metric-card">
+                    <div class="metric-label">Aktive Datens�tze</div>
+                    <div class="metric-value" id="metric-count">--</div>
+                    <div class="metric-sub">aktualisiert lokal</div>
+                </div>
+            </div>
+        </div>
+    </header>
 
-    <div class="container">
-        <form hx-post="/calculate-co2" hx-target="#result" class="form">
-            <div class="form-group">
-                <label for="transport">Verkehrsmittel (km/Woche):</label>
-                <select id="transport" name="transport" required>
-                    <option value="">-- Wählen --</option>
-                    <option value="auto">Auto (1.0 kg CO2/km)</option>
-                    <option value="bus">Bus (0.1 kg CO2/km)</option>
-                    <option value="zug">Zug (0.04 kg CO2/km)</option>
-                    <option value="flugzeug">Flugzeug (0.25 kg CO2/km)</option>
-                </select>
-                <input type="number" name="transport_km" placeholder="km/Woche" min="0" step="0.1">
+    <main class="layout">
+        <section class="auth-panel">
+            <div class="panel-header">
+                <h2>Login</h2>
+                <button id="toggle-auth" class="link-btn">Noch kein Konto?</button>
             </div>
 
-            <div class="form-group">
-                <label for="electricity">Stromverbrauch (kWh/Monat):</label>
-                <input type="number" id="electricity" name="electricity" placeholder="z.B. 300" min="0" step="1">
+            <form id="login-form" class="form">
+                <label for="login-email">Email</label>
+                <input id="login-email" type="email" placeholder="name@evn.at" required>
+
+                <label for="login-password">Passwort</label>
+                <input id="login-password" type="password" placeholder="********" required>
+
+                <button type="submit" class="btn-primary">Einloggen</button>
+                <div id="login-error" class="form-error"></div>
+            </form>
+
+            <form id="register-form" class="form hidden">
+                <label for="register-name">Name</label>
+                <input id="register-name" type="text" placeholder="Vorname Nachname">
+
+                <label for="register-email">Email</label>
+                <input id="register-email" type="email" placeholder="name@evn.at" required>
+
+                <label for="register-password">Passwort</label>
+                <input id="register-password" type="password" placeholder="Mind. 6 Zeichen" required>
+
+                <button type="submit" class="btn-primary">Registrieren</button>
+                <div id="register-error" class="form-error"></div>
+            </form>
+        </section>
+
+        <section class="data-panel">
+            <div class="panel-header">
+                <h2>CO2 Ergebnisse</h2>
+                <button id="logout-btn" class="link-btn hidden">Logout</button>
             </div>
 
-            <div class="form-group">
-                <label for="heating">Heizenergie (m³ Gas/Monat):</label>
-                <input type="number" id="heating" name="heating" placeholder="z.B. 50" min="0" step="0.1">
+            <div class="data-summary">
+                <div class="summary-card">
+                    <div class="summary-label">Letzte Aktualisierung</div>
+                    <div class="summary-value" id="last-updated">--</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Durchschnitt CO2</div>
+                    <div class="summary-value" id="avg-co2">--</div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="diet">Ernährung:</label>
-                <select id="diet" name="diet" required>
-                    <option value="">-- Wählen --</option>
-                    <option value="vegan">Vegan (2.0 kg CO2/Tag)</option>
-                    <option value="vegetarisch">Vegetarisch (3.5 kg CO2/Tag)</option>
-                    <option value="normal">Gemischt (5.0 kg CO2/Tag)</option>
-                    <option value="fleischreich">Fleischreich (7.5 kg CO2/Tag)</option>
-                </select>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Mitarbeiter</th>
+                            <th>Arbeitstage</th>
+                            <th>Distanz (km)</th>
+                            <th>Transport</th>
+                            <th>Fl�ge/Jahr</th>
+                            <th>CO2 gesamt (kg)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="survey-body">
+                        <tr>
+                            <td colspan="7" class="empty-row">Bitte einloggen, um Daten zu sehen.</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
+        </section>
+    </main>
 
-            <button type="submit" class="btn-calculate">
-                <span class="htmx-indicator">⏳ Berechne...</span>
-                Berechnen
-            </button>
-        </form>
+    <script>
+        const API_URL = "http://localhost:3000";
+        const loginForm = document.getElementById("login-form");
+        const registerForm = document.getElementById("register-form");
+        const toggleAuth = document.getElementById("toggle-auth");
+        const logoutBtn = document.getElementById("logout-btn");
+        const loginError = document.getElementById("login-error");
+        const registerError = document.getElementById("register-error");
+        const surveyBody = document.getElementById("survey-body");
+        const metricCount = document.getElementById("metric-count");
+        const lastUpdated = document.getElementById("last-updated");
+        const avgCo2 = document.getElementById("avg-co2");
 
-        <div id="result" class="result-container"></div>
-    </div>
+        function setToken(token) {
+            if (token) localStorage.setItem("token", token);
+            else localStorage.removeItem("token");
+        }
+
+        function getToken() {
+            return localStorage.getItem("token");
+        }
+
+        toggleAuth.addEventListener("click", () => {
+            loginForm.classList.toggle("hidden");
+            registerForm.classList.toggle("hidden");
+            toggleAuth.textContent = loginForm.classList.contains("hidden")
+                ? "Bereits registriert?"
+                : "Noch kein Konto?";
+        });
+
+        logoutBtn.addEventListener("click", () => {
+            setToken(null);
+            logoutBtn.classList.add("hidden");
+            surveyBody.innerHTML = `<tr><td colspan="7" class="empty-row">Bitte einloggen, um Daten zu sehen.</td></tr>`;
+            metricCount.textContent = "--";
+            lastUpdated.textContent = "--";
+            avgCo2.textContent = "--";
+        });
+
+        async function handleAuth(endpoint, payload, errorEl) {
+            errorEl.textContent = "";
+            const res = await fetch(`${API_URL}${endpoint}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                errorEl.textContent = data.error || "Fehler";
+                return;
+            }
+            setToken(data.token);
+            logoutBtn.classList.remove("hidden");
+            await loadSurveys();
+        }
+
+        loginForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            handleAuth("/auth/login", {
+                email: document.getElementById("login-email").value,
+                password: document.getElementById("login-password").value,
+            }, loginError);
+        });
+
+        registerForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            handleAuth("/auth/register", {
+                name: document.getElementById("register-name").value,
+                email: document.getElementById("register-email").value,
+                password: document.getElementById("register-password").value,
+            }, registerError);
+        });
+
+        async function loadSurveys() {
+            const token = getToken();
+            if (!token) return;
+            const res = await fetch(`${API_URL}/surveys`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            metricCount.textContent = data.length;
+            if (!data.length) {
+                surveyBody.innerHTML = `<tr><td colspan="7" class="empty-row">Keine Daten vorhanden.</td></tr>`;
+                avgCo2.textContent = "--";
+                lastUpdated.textContent = "--";
+                return;
+            }
+            const avg = data.reduce((acc, row) => acc + (row.totalCo2Kg || 0), 0) / data.length;
+            avgCo2.textContent = `${avg.toFixed(1)} kg`;
+            lastUpdated.textContent = new Date(data[0].createdAt).toLocaleString("de-AT");
+
+            surveyBody.innerHTML = data
+                .map((row) => `
+                    <tr>
+                        <td>${row.id}</td>
+                        <td>${row.user?.name || row.user?.email || "-"}</td>
+                        <td>${row.officeDaysPerWeek}</td>
+                        <td>${row.distanceKm}</td>
+                        <td>${row.transportMain}</td>
+                        <td>${row.flightsPerYear ?? "-"}</td>
+                        <td>${row.totalCo2Kg ? row.totalCo2Kg.toFixed(1) : "-"}</td>
+                    </tr>
+                `)
+                .join("");
+        }
+
+        if (getToken()) {
+            logoutBtn.classList.remove("hidden");
+            loadSurveys();
+        }
+    </script>
 </body>
 </html>

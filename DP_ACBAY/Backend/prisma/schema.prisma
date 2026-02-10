@@ -1,15 +1,75 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite" // oder mysql
+  url      = env(" ")
+}
+
+//////////////////////
+// USER (Login)
+//////////////////////
+
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String // bcrypt hash
+  name     String?
+
+  surveys Survey[]
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////
+// SURVEY (Umfrage)
+//////////////////////
+
+model Survey {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  // ===== Mobilität =====
+  officeDaysPerWeek        Int
+  transportMain            String // z.B. "CAR_PRIVATE"
+  alternativeTransportFreq Float? // 0.33, 0.1, 0.03, 0
+  alternativeTransport     String? // z.B. "BIKE"
+  distanceKm               Float
+
+  carType String? // "PETROL", "ELECTRIC", etc.
+
+  // ===== Flug =====
+  flightsPerYear   Int? // z.B. 0, 2, 5
+  flightDistanceKm Float? // 750, 2500, 5000
+
+  // ===== Wohnen =====
+  heatingType           String // "GAS", "HEAT_PUMP", etc.
+  warmWaterType         String // "GAS", "ELECTRICITY"
+  usesGreenElectricity  String? // "YES", "NO", "PARTLY"
+  smartElectricityUsage Float? // 1 = oft, 0.2 = selten, 0 = nie
+
+  // ===== Verhalten =====
+  fireworkPerYear Int? // 0,1,2
+  co2Importance   Int? // 1-6
+
+  // ===== Ergebnis =====
+  totalCo2Kg Float? // Hier speicherst du das Ergebnis
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////
+// EMISSIONSFAKTOREN
+//////////////////////
+
+model EmissionFactor {
+  id         Int      @id @default(autoincrement())
+  category   String // "transport", "flight", "heating"
+  type       String // z.B. "CAR_PETROL"
+  co2PerUnit Float // z.B. 192
+  unit       String // "g/km", "g/pkm"
+  createdAt  DateTime @default(now())
 }
