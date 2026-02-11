@@ -51,6 +51,7 @@
         <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
           <div class="text-xs uppercase tracking-wide text-slate-500">Status</div>
           <div id="sessionText" class="mt-1 text-sm font-medium">Oeffentlicher Zugriff aktiv</div>
+          <a id="adminLink" href="admin.html" class="mt-2 hidden text-sm font-medium text-sky-700 hover:text-sky-900">Zum Admin-Panel</a>
           <button id="logoutBtn" type="button" class="mt-2 hidden text-sm font-medium text-rose-700 hover:text-rose-900">Logout</button>
         </div>
       </section>
@@ -113,6 +114,7 @@
     const modeLabel = document.getElementById("modeLabel");
     const sessionText = document.getElementById("sessionText");
     const logoutBtn = document.getElementById("logoutBtn");
+    const adminLink = document.getElementById("adminLink");
     const toggleAuth = document.getElementById("toggleAuth");
     const loginForm = document.getElementById("loginForm");
     const registerForm = document.getElementById("registerForm");
@@ -136,15 +138,33 @@
       return localStorage.getItem("token");
     }
 
+    function setRole(role) {
+      if (role) {
+        localStorage.setItem("role", role);
+      } else {
+        localStorage.removeItem("role");
+      }
+    }
+
+    function getRole() {
+      return localStorage.getItem("role");
+    }
+
+    function isAdminRole(role) {
+      return role === "ADMIN" || role === "SUPER_ADMIN";
+    }
+
     function isPrivateMode() {
       return Boolean(getToken());
     }
 
     function applyMode() {
       const privateMode = isPrivateMode();
-      modeLabel.textContent = privateMode ? "Eingeloggt" : "Oeffentlich";
+      const role = getRole();
+      modeLabel.textContent = privateMode ? `Eingeloggt (${role || "?"})` : "Oeffentlich";
       sessionText.textContent = privateMode ? "Erweiterte Daten sichtbar" : "Oeffentlicher Zugriff aktiv";
       logoutBtn.classList.toggle("hidden", !privateMode);
+      adminLink.classList.toggle("hidden", !(privateMode && isAdminRole(role)));
 
       surveyRows.setAttribute(
         "hx-get",
@@ -209,6 +229,7 @@
         if (!res.ok) {
           if (privateMode && res.status === 401) {
             setToken(null);
+            setRole(null);
             applyMode();
             document.body.dispatchEvent(new Event("refreshDashboard"));
             return loadChartData();
@@ -315,6 +336,7 @@
 
     logoutBtn.addEventListener("click", () => {
       setToken(null);
+      setRole(null);
       applyMode();
       htmx.trigger("body", "refreshDashboard");
       loadChartData();
@@ -322,8 +344,10 @@
 
     document.body.addEventListener("authChanged", (event) => {
       const token = event.detail && event.detail.token;
+      const role = event.detail && event.detail.role;
       if (!token) return;
       setToken(token);
+      setRole(role || null);
       applyMode();
       htmx.trigger("body", "refreshDashboard");
       loadChartData();
@@ -338,23 +362,4 @@
 
     document.body.addEventListener("htmx:afterSwap", (event) => {
       if (event.target.id === "surveyRows" || event.target.id === "summaryGrid") {
-        loadChartData();
-      }
-    });
-
-    document.body.addEventListener("htmx:responseError", (event) => {
-      if (event.target && event.target.id === "surveyRows") {
-        event.target.innerHTML =
-          '<tr><td colspan="7" class="px-3 py-4 text-center text-red-700">Fehler beim Laden der Tabelle. Bitte Backend prüfen.</td></tr>';
-      }
-      if (event.target && event.target.id === "summaryGrid") {
-        event.target.innerHTML =
-          '<div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">Fehler beim Laden der Summary.</div>';
-      }
-    });
-
-    applyMode();
-    loadChartData();
-  </script>
-</body>
-</html>
+        loadC

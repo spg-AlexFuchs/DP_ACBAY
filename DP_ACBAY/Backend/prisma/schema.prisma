@@ -16,8 +16,11 @@ model User {
   email    String  @unique
   password String // bcrypt hash
   name     String?
+  role     String  @default("EMPLOYEE")
 
   surveys Survey[]
+  auditLogs AuditLog[] @relation("AuditActor")
+  uploads UploadedFile[] @relation("UploadActor")
 
   createdAt DateTime @default(now())
 }
@@ -72,4 +75,28 @@ model EmissionFactor {
   co2PerUnit Float // z.B. 192
   unit       String // "g/km", "g/pkm"
   createdAt  DateTime @default(now())
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  actorUserId Int?
+  actor       User?    @relation("AuditActor", fields: [actorUserId], references: [id])
+  action      String
+  targetType  String
+  targetId    String?
+  beforeJson  String?
+  afterJson   String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+}
+
+model UploadedFile {
+  id           Int      @id @default(autoincrement())
+  originalName String
+  storedName   String
+  mimeType     String?
+  sizeBytes    Int
+  uploadedById Int?
+  uploadedBy   User?    @relation("UploadActor", fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
 }

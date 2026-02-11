@@ -5,12 +5,15 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "pdfkit": "^0.17.2",
     "prisma": "^4.16.2",
     "xlsx": "^0.18.5"
   },
   "scripts": {
     "import:excel": "node scripts/import-excel.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "build:css": "tailwindcss -c ../Frontend/tailwind.config.cjs -i ../Frontend/tailwind.input.css -o ../Frontend/style.css --minify"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.24",
