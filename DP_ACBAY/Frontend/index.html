@@ -1,216 +1,360 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EVN AG | CO2 Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EVN AG | HTMX CO2 Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
-<body>
-    <header class="hero">
-        <div class="hero-inner">
-            <div class="hero-brand">
-                <span class="pill">EVN AG</span>
-                <h1>CO2 Emissions-Dashboard</h1>
-                <p>Login, um die Umfrage-Daten und berechneten CO2-Werte pro Mitarbeiter zu sehen.</p>
-            </div>
-            <div class="hero-metric">
-                <div class="metric-card">
-                    <div class="metric-label">Aktive Datensätze</div>
-                    <div class="metric-value" id="metric-count">--</div>
-                    <div class="metric-sub">aktualisiert lokal</div>
-                </div>
-            </div>
+<body class="min-h-screen bg-slate-100 text-slate-900">
+  <div class="mx-auto max-w-7xl p-6 md:p-10">
+    <header class="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-rose-900 p-8 text-white shadow-xl">
+      <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div class="inline-flex items-center rounded-full border border-rose-300/40 bg-rose-500/20 px-3 py-1 text-xs font-semibold tracking-wide">EVN AG</div>
+          <h1 class="mt-4 text-3xl font-bold md:text-4xl">CO2 Dashboard mit HTMX</h1>
+          <p class="mt-2 max-w-3xl text-sm text-slate-200 md:text-base">
+            Oeffentliche Umfrageergebnisse sind ohne Login sichtbar. Mit Login werden zusaetzliche Daten geladen.
+          </p>
         </div>
+        <div class="rounded-xl border border-white/20 bg-white/10 px-4 py-3">
+          <div class="text-xs uppercase tracking-wider text-slate-200">Modus</div>
+          <div id="modeLabel" class="mt-1 text-lg font-semibold">Oeffentlich</div>
+        </div>
+      </div>
     </header>
 
-    <main class="layout">
-        <section class="auth-panel">
-            <div class="panel-header">
-                <h2>Login</h2>
-                <button id="toggle-auth" class="link-btn">Noch kein Konto?</button>
-            </div>
+    <main class="mt-6 grid gap-6 lg:grid-cols-12">
+      <section class="rounded-2xl bg-white p-5 shadow lg:col-span-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">Login</h2>
+          <button id="toggleAuth" type="button" class="text-sm font-medium text-rose-700 hover:text-rose-900">Noch kein Konto?</button>
+        </div>
 
-            <form id="login-form" class="form">
-                <label for="login-email">Email</label>
-                <input id="login-email" type="email" placeholder="name@evn.at" required>
+        <form id="loginForm" class="mt-4 space-y-3" hx-post="http://localhost:3000/auth/login-hx" hx-target="#authFeedback" hx-swap="innerHTML">
+          <input name="email" type="email" placeholder="name@evn.at" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none" />
+          <input name="password" type="password" placeholder="Passwort" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none" />
+          <button type="submit" class="w-full rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700">Einloggen</button>
+        </form>
 
-                <label for="login-password">Passwort</label>
-                <input id="login-password" type="password" placeholder="********" required>
+        <form id="registerForm" class="mt-4 hidden space-y-3" hx-post="http://localhost:3000/auth/register-hx" hx-target="#authFeedback" hx-swap="innerHTML">
+          <input name="name" type="text" placeholder="Vorname Nachname" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none" />
+          <input name="email" type="email" placeholder="name@evn.at" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none" />
+          <input name="password" type="password" placeholder="Mind. 6 Zeichen" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none" />
+          <button type="submit" class="w-full rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-900">Registrieren</button>
+        </form>
 
-                <button type="submit" class="btn-primary">Einloggen</button>
-                <div id="login-error" class="form-error"></div>
-            </form>
+        <div id="authFeedback" class="mt-3 min-h-5 text-sm"></div>
 
-            <form id="register-form" class="form hidden">
-                <label for="register-name">Name</label>
-                <input id="register-name" type="text" placeholder="Vorname Nachname">
+        <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div class="text-xs uppercase tracking-wide text-slate-500">Status</div>
+          <div id="sessionText" class="mt-1 text-sm font-medium">Oeffentlicher Zugriff aktiv</div>
+          <button id="logoutBtn" type="button" class="mt-2 hidden text-sm font-medium text-rose-700 hover:text-rose-900">Logout</button>
+        </div>
+      </section>
 
-                <label for="register-email">Email</label>
-                <input id="register-email" type="email" placeholder="name@evn.at" required>
+      <section class="rounded-2xl bg-white p-5 shadow lg:col-span-8">
+        <div id="summaryGrid" class="grid gap-3 md:grid-cols-3"
+          hx-get="http://localhost:3000/partials/summary/public"
+          hx-trigger="load, refreshDashboard from:body"
+          hx-swap="innerHTML">
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">Lade Summary...</div>
+        </div>
 
-                <label for="register-password">Passwort</label>
-                <input id="register-password" type="password" placeholder="Mind. 6 Zeichen" required>
+        <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Transport-Verteilung</div>
+            <div class="h-56"><canvas id="transportChart"></canvas></div>
+          </article>
+          <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Fluege pro Jahr</div>
+            <div class="h-56"><canvas id="flightChart"></canvas></div>
+          </article>
+          <article class="rounded-xl border border-slate-200 bg-slate-50 p-3 md:col-span-2 xl:col-span-1">
+            <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">CO2 nach Transport</div>
+            <div class="h-56"><canvas id="co2Chart"></canvas></div>
+          </article>
+        </div>
 
-                <button type="submit" class="btn-primary">Registrieren</button>
-                <div id="register-error" class="form-error"></div>
-            </form>
-        </section>
+        <div class="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+          <span class="font-semibold">Hover:</span>
+          <span id="hoverInfo" class="text-slate-700">Chart-Segment anfahren.</span>
+        </div>
 
-        <section class="data-panel">
-            <div class="panel-header">
-                <h2>CO2 Ergebnisse</h2>
-                <button id="logout-btn" class="link-btn hidden">Logout</button>
-            </div>
-
-            <div class="data-summary">
-                <div class="summary-card">
-                    <div class="summary-label">Letzte Aktualisierung</div>
-                    <div class="summary-value" id="last-updated">--</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-label">Durchschnitt CO2</div>
-                    <div class="summary-value" id="avg-co2">--</div>
-                </div>
-            </div>
-
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Mitarbeiter</th>
-                            <th>Arbeitstage</th>
-                            <th>Distanz (km)</th>
-                            <th>Transport</th>
-                            <th>Flüge/Jahr</th>
-                            <th>CO2 gesamt (kg)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="survey-body">
-                        <tr>
-                            <td colspan="7" class="empty-row">Bitte einloggen, um Daten zu sehen.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+        <div class="mt-5 overflow-x-auto rounded-xl border border-slate-200">
+          <table class="min-w-full text-left text-sm">
+            <thead class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+              <tr>
+                <th class="px-3 py-2">ID</th>
+                <th class="px-3 py-2">Mitarbeiter</th>
+                <th class="px-3 py-2">Arbeitstage</th>
+                <th class="px-3 py-2">Distanz (km)</th>
+                <th class="px-3 py-2">Transport</th>
+                <th class="px-3 py-2">Fluege/Jahr</th>
+                <th class="px-3 py-2">CO2 gesamt (kg)</th>
+              </tr>
+            </thead>
+            <tbody id="surveyRows"
+              hx-get="http://localhost:3000/partials/surveys/public"
+              hx-trigger="load, refreshDashboard from:body"
+              hx-swap="innerHTML">
+              <tr><td colspan="7" class="px-3 py-4 text-center text-slate-500">Lade Daten...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
+  </div>
 
-    <script>
-        const API_URL = "http://localhost:3000";
-        const loginForm = document.getElementById("login-form");
-        const registerForm = document.getElementById("register-form");
-        const toggleAuth = document.getElementById("toggle-auth");
-        const logoutBtn = document.getElementById("logout-btn");
-        const loginError = document.getElementById("login-error");
-        const registerError = document.getElementById("register-error");
-        const surveyBody = document.getElementById("survey-body");
-        const metricCount = document.getElementById("metric-count");
-        const lastUpdated = document.getElementById("last-updated");
-        const avgCo2 = document.getElementById("avg-co2");
+  <script>
+    const API_URL = "http://localhost:3000";
+    const modeLabel = document.getElementById("modeLabel");
+    const sessionText = document.getElementById("sessionText");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const toggleAuth = document.getElementById("toggleAuth");
+    const loginForm = document.getElementById("loginForm");
+    const registerForm = document.getElementById("registerForm");
+    const surveyRows = document.getElementById("surveyRows");
+    const summaryGrid = document.getElementById("summaryGrid");
+    const hoverInfo = document.getElementById("hoverInfo");
 
-        function setToken(token) {
-            if (token) localStorage.setItem("token", token);
-            else localStorage.removeItem("token");
-        }
+    let transportChart;
+    let flightChart;
+    let co2Chart;
 
-        function getToken() {
-            return localStorage.getItem("token");
-        }
+    function setToken(token) {
+      if (token) {
+        localStorage.setItem("token", token);
+      } else {
+        localStorage.removeItem("token");
+      }
+    }
 
-        toggleAuth.addEventListener("click", () => {
-            loginForm.classList.toggle("hidden");
-            registerForm.classList.toggle("hidden");
-            toggleAuth.textContent = loginForm.classList.contains("hidden")
-                ? "Bereits registriert?"
-                : "Noch kein Konto?";
-        });
+    function getToken() {
+      return localStorage.getItem("token");
+    }
 
-        logoutBtn.addEventListener("click", () => {
+    function isPrivateMode() {
+      return Boolean(getToken());
+    }
+
+    function applyMode() {
+      const privateMode = isPrivateMode();
+      modeLabel.textContent = privateMode ? "Eingeloggt" : "Oeffentlich";
+      sessionText.textContent = privateMode ? "Erweiterte Daten sichtbar" : "Oeffentlicher Zugriff aktiv";
+      logoutBtn.classList.toggle("hidden", !privateMode);
+
+      surveyRows.setAttribute(
+        "hx-get",
+        privateMode ? `${API_URL}/partials/surveys/private` : `${API_URL}/partials/surveys/public`
+      );
+      summaryGrid.setAttribute(
+        "hx-get",
+        privateMode ? `${API_URL}/partials/summary/private` : `${API_URL}/partials/summary/public`
+      );
+    }
+
+    function normalizeTransport(value) {
+      if (!value) return "Unbekannt";
+      return String(value).replaceAll("_", " ");
+    }
+
+    function flightsBucket(value) {
+      if (value === null || value === undefined) return "Keine Angabe";
+      if (value <= 0) return "0";
+      if (value <= 2) return "1-2";
+      if (value <= 5) return "2-5";
+      return ">5";
+    }
+
+    function chartOptions(formatter) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 700, easing: "easeOutQuart" },
+        plugins: {
+          legend: { labels: { color: "#334155", boxWidth: 12 } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.label}: ${ctx.formattedValue}`,
+            },
+          },
+        },
+        onHover: (evt, elements, chart) => {
+          chart.canvas.style.cursor = elements.length ? "pointer" : "default";
+          if (!elements.length) {
+            hoverInfo.textContent = "Chart-Segment anfahren.";
+            return;
+          }
+          const index = elements[0].index;
+          const label = chart.data.labels[index];
+          const value = chart.data.datasets[0].data[index];
+          hoverInfo.textContent = formatter(label, value);
+        },
+      };
+    }
+
+    async function loadChartData() {
+      const privateMode = isPrivateMode();
+      const endpoint = privateMode ? `${API_URL}/surveys` : `${API_URL}/surveys/public`;
+      const headers = {};
+      if (privateMode) {
+        headers.Authorization = `Bearer ${getToken()}`;
+      }
+
+      try {
+        const res = await fetch(endpoint, { headers });
+        if (!res.ok) {
+          if (privateMode && res.status === 401) {
             setToken(null);
-            logoutBtn.classList.add("hidden");
-            surveyBody.innerHTML = `<tr><td colspan="7" class="empty-row">Bitte einloggen, um Daten zu sehen.</td></tr>`;
-            metricCount.textContent = "--";
-            lastUpdated.textContent = "--";
-            avgCo2.textContent = "--";
-        });
-
-        async function handleAuth(endpoint, payload, errorEl) {
-            errorEl.textContent = "";
-            const res = await fetch(`${API_URL}${endpoint}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                errorEl.textContent = data.error || "Fehler";
-                return;
-            }
-            setToken(data.token);
-            logoutBtn.classList.remove("hidden");
-            await loadSurveys();
+            applyMode();
+            document.body.dispatchEvent(new Event("refreshDashboard"));
+            return loadChartData();
+          }
+          return;
         }
+        const rows = await res.json();
+        renderCharts(rows);
+      } catch (_) {
+        hoverInfo.textContent = "API nicht erreichbar.";
+      }
+    }
 
-        loginForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            handleAuth("/auth/login", {
-                email: document.getElementById("login-email").value,
-                password: document.getElementById("login-password").value,
-            }, loginError);
-        });
+    function renderCharts(rows) {
+      const transportMap = new Map();
+      const flightsMap = new Map();
+      const co2Map = new Map();
 
-        registerForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            handleAuth("/auth/register", {
-                name: document.getElementById("register-name").value,
-                email: document.getElementById("register-email").value,
-                password: document.getElementById("register-password").value,
-            }, registerError);
-        });
+      rows.forEach((row) => {
+        const transport = normalizeTransport(row.transportMain);
+        transportMap.set(transport, (transportMap.get(transport) || 0) + 1);
 
-        async function loadSurveys() {
-            const token = getToken();
-            if (!token) return;
-            const res = await fetch(`${API_URL}/surveys`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!res.ok) return;
-            const data = await res.json();
-            metricCount.textContent = data.length;
-            if (!data.length) {
-                surveyBody.innerHTML = `<tr><td colspan="7" class="empty-row">Keine Daten vorhanden.</td></tr>`;
-                avgCo2.textContent = "--";
-                lastUpdated.textContent = "--";
-                return;
-            }
-            const avg = data.reduce((acc, row) => acc + (row.totalCo2Kg || 0), 0) / data.length;
-            avgCo2.textContent = `${avg.toFixed(1)} kg`;
-            lastUpdated.textContent = new Date(data[0].createdAt).toLocaleString("de-AT");
+        const flightKey = flightsBucket(row.flightsPerYear);
+        flightsMap.set(flightKey, (flightsMap.get(flightKey) || 0) + 1);
 
-            surveyBody.innerHTML = data
-                .map((row) => `
-                    <tr>
-                        <td>${row.id}</td>
-                        <td>${row.user?.name || row.user?.email || "-"}</td>
-                        <td>${row.officeDaysPerWeek}</td>
-                        <td>${row.distanceKm}</td>
-                        <td>${row.transportMain}</td>
-                        <td>${row.flightsPerYear ?? "-"}</td>
-                        <td>${row.totalCo2Kg ? row.totalCo2Kg.toFixed(1) : "-"}</td>
-                    </tr>
-                `)
-                .join("");
-        }
+        const current = co2Map.get(transport) || { sum: 0, count: 0 };
+        current.sum += Number(row.totalCo2Kg || 0);
+        current.count += 1;
+        co2Map.set(transport, current);
+      });
 
-        if (getToken()) {
-            logoutBtn.classList.remove("hidden");
-            loadSurveys();
-        }
-    </script>
+      const transportLabels = [...transportMap.keys()];
+      const transportData = [...transportMap.values()];
+      const flightLabels = [...flightsMap.keys()];
+      const flightData = [...flightsMap.values()];
+      const co2Labels = [...co2Map.keys()];
+      const co2Data = [...co2Map.values()].map((x) => Number((x.sum / x.count).toFixed(1)));
+
+      if (transportChart) transportChart.destroy();
+      if (flightChart) flightChart.destroy();
+      if (co2Chart) co2Chart.destroy();
+
+      transportChart = new Chart(document.getElementById("transportChart"), {
+        type: "pie",
+        data: {
+          labels: transportLabels,
+          datasets: [{
+            data: transportData,
+            backgroundColor: ["#e11d48", "#0ea5e9", "#f59e0b", "#22c55e", "#6366f1", "#334155"],
+            borderColor: "#ffffff",
+            borderWidth: 2,
+            hoverOffset: 24,
+          }],
+        },
+        options: chartOptions((label, value) => `${label}: ${value} Personen`),
+      });
+
+      flightChart = new Chart(document.getElementById("flightChart"), {
+        type: "doughnut",
+        data: {
+          labels: flightLabels,
+          datasets: [{
+            data: flightData,
+            backgroundColor: ["#334155", "#059669", "#d97706", "#dc2626", "#7c3aed"],
+            borderColor: "#ffffff",
+            borderWidth: 2,
+            hoverOffset: 20,
+          }],
+        },
+        options: chartOptions((label, value) => `Fluege ${label}: ${value} Personen`),
+      });
+
+      co2Chart = new Chart(document.getElementById("co2Chart"), {
+        type: "bar",
+        data: {
+          labels: co2Labels,
+          datasets: [{
+            label: "kg CO2",
+            data: co2Data,
+            backgroundColor: "rgba(14,165,233,0.7)",
+            borderColor: "#0369a1",
+            borderWidth: 1,
+            borderRadius: 8,
+            hoverBackgroundColor: "rgba(225,29,72,0.7)",
+          }],
+        },
+        options: {
+          ...chartOptions((label, value) => `${label}: ${value} kg CO2`),
+          scales: {
+            x: { ticks: { color: "#334155" } },
+            y: { beginAtZero: true, ticks: { color: "#334155" } },
+          },
+        },
+      });
+    }
+
+    toggleAuth.addEventListener("click", () => {
+      loginForm.classList.toggle("hidden");
+      registerForm.classList.toggle("hidden");
+      toggleAuth.textContent = loginForm.classList.contains("hidden")
+        ? "Bereits registriert?"
+        : "Noch kein Konto?";
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      setToken(null);
+      applyMode();
+      htmx.trigger("body", "refreshDashboard");
+      loadChartData();
+    });
+
+    document.body.addEventListener("authChanged", (event) => {
+      const token = event.detail && event.detail.token;
+      if (!token) return;
+      setToken(token);
+      applyMode();
+      htmx.trigger("body", "refreshDashboard");
+      loadChartData();
+    });
+
+    document.body.addEventListener("htmx:configRequest", (event) => {
+      const token = getToken();
+      if (token) {
+        event.detail.headers.Authorization = `Bearer ${token}`;
+      }
+    });
+
+    document.body.addEventListener("htmx:afterSwap", (event) => {
+      if (event.target.id === "surveyRows" || event.target.id === "summaryGrid") {
+        loadChartData();
+      }
+    });
+
+    document.body.addEventListener("htmx:responseError", (event) => {
+      if (event.target && event.target.id === "surveyRows") {
+        event.target.innerHTML =
+          '<tr><td colspan="7" class="px-3 py-4 text-center text-red-700">Fehler beim Laden der Tabelle. Bitte Backend prÃ¼fen.</td></tr>';
+      }
+      if (event.target && event.target.id === "summaryGrid") {
+        event.target.innerHTML =
+          '<div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">Fehler beim Laden der Summary.</div>';
+      }
+    });
+
+    applyMode();
+    loadChartData();
+  </script>
 </body>
 </html>
