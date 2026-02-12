@@ -5,12 +5,11 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const EMISSION_FILE = path.join(
-  "C:\\Users\\yoav\\SynologyDrive\\SWP_BIE_REH",
-  "Emissionen nach Typ.xlsx",
+  "data", "emissionen_nach_typ.xlsx"
 );
 const SURVEY_FILE = path.join(
-  "C:\\Users\\yoav\\SynologyDrive\\SWP_BIE_REH",
-  "Auswertung Umfrage.xlsx",
+  "data",
+  "auswertung_umfrage.xlsx"
 );
 
 function toText(value) {
@@ -37,9 +36,7 @@ function normalizeText(value) {
 }
 
 function normalizeEnum(value) {
-  return normalizeText(value)
-    .replace(/[.,;:!?()]/g, "")
-    .trim();
+  return normalizeText(value).replace(/[.,;:!?()]/g, "").trim();
 }
 
 function buildHeaderIndex(rows) {
@@ -77,10 +74,7 @@ function findFactor(factors, label) {
 }
 
 function findColumnName(headers, aliases) {
-  const normalizedHeaders = headers.map((h) => ({
-    raw: h,
-    norm: normalizeText(h),
-  }));
+  const normalizedHeaders = headers.map((h) => ({ raw: h, norm: normalizeText(h) }));
   for (const alias of aliases) {
     const aliasNorm = normalizeText(alias);
     const hit = normalizedHeaders.find((h) => h.norm === aliasNorm);
@@ -221,10 +215,7 @@ function computeSurveyTotal(input, factors) {
   const mainTransport =
     pickByIncludes(input.transportMainText, TRANSPORT_MAP) ||
     pickByIncludes(input.carTypeText, CAR_TYPE_MAP);
-  const altTransport = pickByIncludes(
-    input.alternativeTransportText,
-    TRANSPORT_MAP,
-  );
+  const altTransport = pickByIncludes(input.alternativeTransportText, TRANSPORT_MAP);
   const altFreq = parseAltFreq(input.alternativeTransportFreqText) ?? 0;
 
   let commuteKg = 0;
@@ -233,19 +224,13 @@ function computeSurveyTotal(input, factors) {
     const altFactor = findFactor(factors, altTransport);
     const mainValue = mainFactor?.valueNumber || 0;
     const altValue = altFactor?.valueNumber || 0;
-    const commuteG =
-      officeDays *
-      distanceKm *
-      (mainValue * (1 - altFreq) + altValue * altFreq);
+    const commuteG = officeDays * distanceKm * (mainValue * (1 - altFreq) + altValue * altFreq);
     commuteKg = commuteG / 1000;
   }
 
   let flightKg = 0;
   const flightsPerYear = parseFlightsPerYear(input.flightsPerYearText);
-  const flightLabel = pickByIncludes(
-    input.flightDistanceText,
-    FLIGHT_DISTANCE_MAP,
-  );
+  const flightLabel = pickByIncludes(input.flightDistanceText, FLIGHT_DISTANCE_MAP);
   if (flightsPerYear !== null && flightLabel) {
     const factor = findFactor(factors, flightLabel);
     flightKg = ((factor?.valueNumber || 0) * flightsPerYear) / 1000;
@@ -257,8 +242,7 @@ function computeSurveyTotal(input, factors) {
     const energy = findFactor(factors, "Energiebedarf Warmwasser");
     const factor = findFactor(factors, warmWaterType);
     if (energy && factor) {
-      warmWaterKg =
-        ((energy.valueNumber || 0) * (factor.valueNumber || 0)) / 1000;
+      warmWaterKg = ((energy.valueNumber || 0) * (factor.valueNumber || 0)) / 1000;
     }
   }
 
@@ -279,11 +263,7 @@ async function importEmissionFactors() {
     {
       sheetName: "Pendelweg",
       category: "transport",
-      labelAliases: [
-        "Mobilitätsart (2)",
-        "Mobilitatsart (2)",
-        "MobilitÃ¤tsart (2)",
-      ],
+      labelAliases: ["Mobilitätsart (2)", "Mobilitatsart (2)", "MobilitÃ¤tsart (2)"],
       valueAliases: ["Lebenszyklus Emission"],
       unitAliases: ["Einheit"],
       sourceAliases: ["Quelle"],
@@ -291,11 +271,7 @@ async function importEmissionFactors() {
     {
       sheetName: "Urlaub",
       category: "flight",
-      labelAliases: [
-        "Mobilitätsart (2)",
-        "Mobilitatsart (2)",
-        "MobilitÃ¤tsart (2)",
-      ],
+      labelAliases: ["Mobilitätsart (2)", "Mobilitatsart (2)", "MobilitÃ¤tsart (2)"],
       valueAliases: ["Lebenszyklus Emission"],
       unitAliases: ["Einheit"],
       sourceAliases: ["Quelle"],
@@ -349,10 +325,7 @@ async function importEmissionFactors() {
     });
   }
 
-  const factors = items.map((x) => ({
-    label: x.label,
-    valueNumber: x.valueNumber,
-  }));
+  const factors = items.map((x) => ({ label: x.label, valueNumber: x.valueNumber }));
   console.log(`Emissionen importiert: ${items.length}`);
   return factors;
 }
@@ -371,70 +344,48 @@ async function importSurvey(factors, userId) {
 
   for (const row of rows) {
     const officeDaysText = toText(
-      getCell(row, headerIndex, [
-        "Wie oft sind Sie pro Woche im Büro?",
-        "Wie oft sind Sie pro Woche im Buro?",
-      ]),
+      getCell(row, headerIndex, ["Wie oft sind Sie pro Woche im Büro?", "Wie oft sind Sie pro Woche im Buro?"])
     );
     const transportMainText = toText(
-      getCell(row, headerIndex, [
-        "Mit welchem Verkehrsmittel kommen Sie in der Regel zur Arbeit?",
-      ]),
+      getCell(row, headerIndex, ["Mit welchem Verkehrsmittel kommen Sie in der Regel zur Arbeit?"])
     );
     const alternativeTransportFreqText = toText(
-      getCell(row, headerIndex, [
-        "Nutzen Sie auch alternative Verkehrsmittel an manchen Tagen?",
-      ]),
+      getCell(row, headerIndex, ["Nutzen Sie auch alternative Verkehrsmittel an manchen Tagen?"])
     );
     const alternativeTransportText = toText(
-      getCell(row, headerIndex, [
-        "Wenn ja, welche alternativen Verkehrsmittel?",
-      ]),
+      getCell(row, headerIndex, ["Wenn ja, welche alternativen Verkehrsmittel?"])
     );
     const distanceText = toText(
-      getCell(row, headerIndex, [
-        "Wie weit ist Ihr Arbeitsplatz von zuhause entfernt?",
-      ]),
+      getCell(row, headerIndex, ["Wie weit ist Ihr Arbeitsplatz von zuhause entfernt?"])
     );
     const carTypeText = toText(
-      getCell(row, headerIndex, [
-        "Falls Sie ein Auto benutzen: Welchen Antrieb hat Ihr Auto?",
-      ]),
+      getCell(row, headerIndex, ["Falls Sie ein Auto benutzen: Welchen Antrieb hat Ihr Auto?"])
     );
     const flightsPerYearText = toText(
-      getCell(row, headerIndex, ["Wie oft fliegen Sie im Jahr?"]),
+      getCell(row, headerIndex, ["Wie oft fliegen Sie im Jahr?"])
     );
     const flightDistanceText = toText(
-      getCell(row, headerIndex, [
-        "Wenn Sie fliegen, welche Strecken fliegen Sie eher?",
-      ]),
+      getCell(row, headerIndex, ["Wenn Sie fliegen, welche Strecken fliegen Sie eher?"])
     );
-    const heatingTypeText = toText(
-      getCell(row, headerIndex, ["Wie heizen Sie zu Hause?"]),
-    );
+    const heatingTypeText = toText(getCell(row, headerIndex, ["Wie heizen Sie zu Hause?"]));
     const warmWaterTypeText = toText(
-      getCell(row, headerIndex, ["Wie wird Ihr Warmwasser zu Hause erzeugt?"]),
+      getCell(row, headerIndex, ["Wie wird Ihr Warmwasser zu Hause erzeugt?"])
     );
     const usesGreenElectricityText = toText(
-      getCell(row, headerIndex, [
-        "Nutzen Sie zu Hause Ökostrom",
-        "Nutzen Sie zu Hause Okostrom",
-      ]),
+      getCell(row, headerIndex, ["Nutzen Sie zu Hause Ökostrom", "Nutzen Sie zu Hause Okostrom"])
     );
     const smartElectricityUsageText = toText(
       getCell(row, headerIndex, [
         "Nutzen Sie Strom bewusst zu Zeiten, in denen viel erneuerbare Energie verfügbar ist (z. B. mittags bei PV-Strom)?",
         "Nutzen Sie Strom bewusst zu Zeiten, in denen viel erneuerbare Energie verfugbar ist (z. B. mittags bei PV-Strom)?",
-      ]),
+      ])
     );
-    const fireworkText = toText(
-      getCell(row, headerIndex, ["Wie oft verwenden Sie Feuerwerk?"]),
-    );
+    const fireworkText = toText(getCell(row, headerIndex, ["Wie oft verwenden Sie Feuerwerk?"]));
     const co2ImportanceText = toText(
       getCell(row, headerIndex, [
         "Wie wichtig ist Ihnen das Thema CO2-Einsparung? (1 sehr wichtig – 6 gar nicht wichtig)",
         "Wie wichtig ist Ihnen das Thema CO2-Einsparung? (1 sehr wichtig - 6 gar nicht wichtig)",
-      ]),
+      ])
     );
 
     const mappedTransport =
@@ -444,14 +395,10 @@ async function importSurvey(factors, userId) {
       "UNKNOWN";
 
     const mappedHeating =
-      pickByIncludes(heatingTypeText, HEATING_MAP) ||
-      toText(heatingTypeText) ||
-      "UNKNOWN";
+      pickByIncludes(heatingTypeText, HEATING_MAP) || toText(heatingTypeText) || "UNKNOWN";
 
     const mappedWarmWater =
-      pickByIncludes(warmWaterTypeText, WARM_WATER_MAP) ||
-      toText(warmWaterTypeText) ||
-      "UNKNOWN";
+      pickByIncludes(warmWaterTypeText, WARM_WATER_MAP) || toText(warmWaterTypeText) || "UNKNOWN";
 
     const totalCo2Kg = computeSurveyTotal(
       {
@@ -465,13 +412,10 @@ async function importSurvey(factors, userId) {
         flightDistanceText,
         warmWaterTypeText,
       },
-      factors,
+      factors
     );
 
-    const flightDistanceLabel = pickByIncludes(
-      flightDistanceText,
-      FLIGHT_DISTANCE_MAP,
-    );
+    const flightDistanceLabel = pickByIncludes(flightDistanceText, FLIGHT_DISTANCE_MAP);
     let flightDistanceKm = null;
     if (flightDistanceLabel?.includes("<1500")) flightDistanceKm = 750;
     if (flightDistanceLabel?.includes("1500–3500")) flightDistanceKm = 2500;
@@ -483,10 +427,7 @@ async function importSurvey(factors, userId) {
         officeDaysPerWeek: parseOfficeDays(officeDaysText),
         transportMain: mappedTransport,
         alternativeTransportFreq: parseAltFreq(alternativeTransportFreqText),
-        alternativeTransport: pickByIncludes(
-          alternativeTransportText,
-          TRANSPORT_MAP,
-        ),
+        alternativeTransport: pickByIncludes(alternativeTransportText, TRANSPORT_MAP),
         distanceKm: parseDistanceKm(distanceText),
         carType: pickByIncludes(carTypeText, CAR_TYPE_MAP),
         flightsPerYear: parseFlightsPerYear(flightsPerYearText),
