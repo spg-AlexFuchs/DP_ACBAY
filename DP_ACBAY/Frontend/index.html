@@ -1,365 +1,554 @@
 ﻿<!DOCTYPE html>
 <html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EVN AG | HTMX CO2 Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-</head>
-<body class="min-h-screen bg-slate-100 text-slate-900">
-  <div class="mx-auto max-w-7xl p-6 md:p-10">
-    <header class="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-rose-900 p-8 text-white shadow-xl">
-      <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div>
-          <div class="inline-flex items-center rounded-full border border-rose-300/40 bg-rose-500/20 px-3 py-1 text-xs font-semibold tracking-wide">EVN AG</div>
-          <h1 class="mt-4 text-3xl font-bold md:text-4xl">CO2 Dashboard mit HTMX</h1>
-          <p class="mt-2 max-w-3xl text-sm text-slate-200 md:text-base">
-            Oeffentliche Umfrageergebnisse sind ohne Login sichtbar. Mit Login werden zusaetzliche Daten geladen.
-          </p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EVN AG | HTMX CO2 Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  </head>
+
+  <body class="min-h-screen bg-slate-100 text-slate-900 flex flex-col">
+    <div class="mx-auto w-full max-w-7xl flex-1 px-6 py-6 md:p-10">
+      <!-- Header -->
+      <header class="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-red-900 p-8 text-white shadow-xl">
+        <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div class="inline-flex items-center rounded-full border border-red-300/40 bg-red-500/20 px-3 py-1 text-xs font-semibold tracking-wide">
+              CO2 Dashboard
+            </div>
+            <h1 class="mt-4 text-3xl font-bold md:text-4xl">Nachhaltigkeitsbericht</h1>
+            <p class="mt-2 max-w-3xl text-sm text-slate-200 md:text-base">
+              Verfolgen Sie Ihre CO2-Emissionen und tragen Sie zu einer nachhaltigen Zukunft bei.
+            </p>
+          </div>
+          <div class="rounded-xl border border-white/20 bg-white/10 px-4 py-3">
+            <div class="text-xs uppercase tracking-wider text-slate-200">Modus</div>
+            <div id="modeLabel" class="mt-1 text-lg font-semibold">Öffentlich</div>
+          </div>
         </div>
-        <div class="rounded-xl border border-white/20 bg-white/10 px-4 py-3">
-          <div class="text-xs uppercase tracking-wider text-slate-200">Modus</div>
-          <div id="modeLabel" class="mt-1 text-lg font-semibold">Oeffentlich</div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="mt-6 grid gap-6 lg:grid-cols-12">
+        <!-- Login Section -->
+        <section class="rounded-2xl bg-white p-5 shadow lg:col-span-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold">Login</h2>
+            <button id="toggleAuth" type="button" class="text-sm font-medium text-red-600 hover:text-red-700">
+              Noch kein Konto?
+            </button>
+          </div>
+
+          <!-- Login Form -->
+          <form
+            id="loginForm"
+            class="mt-4 space-y-3"
+            hx-post="http://localhost:3000/auth/login-hx"
+            hx-target="#authFeedback"
+            hx-swap="innerHTML"
+          >
+            <input
+              name="email"
+              type="email"
+              placeholder="name@evn.at"
+              required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+            />
+            <input
+              name="password"
+              type="password"
+              placeholder="Passwort"
+              required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+            />
+            <button type="submit" class="w-full rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700">
+              Einloggen
+            </button>
+          </form>
+
+          <!-- Register Form -->
+          <form
+            id="registerForm"
+            class="mt-4 hidden space-y-3"
+            hx-post="http://localhost:3000/auth/register-hx"
+            hx-target="#authFeedback"
+            hx-swap="innerHTML"
+          >
+            <input
+              name="name"
+              type="text"
+              placeholder="Vorname Nachname"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+            />
+            <input
+              name="email"
+              type="email"
+              placeholder="name@evn.at"
+              required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+            />
+            <input
+              name="password"
+              type="password"
+              placeholder="Mind. 6 Zeichen"
+              required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+            />
+            <button type="submit" class="w-full rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-900">
+              Registrieren
+            </button>
+          </form>
+
+          <!-- Auth Feedback -->
+          <div id="authFeedback" class="mt-3 min-h-5 text-sm"></div>
+
+          <!-- Status Box -->
+          <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div class="text-xs uppercase tracking-wide text-slate-500">Status</div>
+            <div id="sessionText" class="mt-1 text-sm font-medium">Öffentlicher Zugriff aktiv</div>
+            <a id="adminLink" href="admin.html" class="mt-2 hidden text-sm font-medium text-red-600 hover:text-red-700">
+              Zum Admin-Panel
+            </a>
+            <button id="logoutBtn" type="button" class="mt-2 hidden text-sm font-medium text-red-600 hover:text-red-700">
+              Logout
+            </button>
+          </div>
+        </section>
+
+        <!-- Dashboard Section -->
+        <section class="rounded-2xl bg-white p-5 shadow lg:col-span-8">
+          <!-- Summary Grid -->
+          <div
+            id="summaryGrid"
+            class="grid gap-3 md:grid-cols-3"
+            hx-get="http://localhost:3000/partials/summary/public"
+            hx-trigger="load, refreshDashboard from:body"
+            hx-swap="innerHTML"
+          >
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">Lade Summary...</div>
+          </div>
+
+          <!-- Charts Grid -->
+          <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <!-- Transport Chart -->
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Transport-Verteilung</div>
+              <div class="h-56">
+                <canvas id="transportChart"></canvas>
+              </div>
+            </article>
+
+            <!-- Flight Chart -->
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Flüge pro Jahr</div>
+              <div class="h-56">
+                <canvas id="flightChart"></canvas>
+              </div>
+            </article>
+
+            <!-- CO2 Chart -->
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3 md:col-span-2 xl:col-span-1">
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">CO2 nach Transport</div>
+              <div class="h-56">
+                <canvas id="co2Chart"></canvas>
+              </div>
+            </article>
+          </div>
+
+          <!-- Hover Info -->
+          <div class="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+            <span class="font-semibold">Hover:</span>
+            <span id="hoverInfo" class="text-slate-700">Chart-Segment anfahren.</span>
+          </div>
+
+          <!-- Data Table -->
+          <div class="mt-5 overflow-x-auto rounded-xl border border-slate-200">
+            <table class="min-w-full text-left text-sm">
+              <thead class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+                <tr>
+                  <th class="px-3 py-2">ID</th>
+                  <th class="px-3 py-2">Mitarbeiter</th>
+                  <th class="px-3 py-2">Arbeitstage</th>
+                  <th class="px-3 py-2">Distanz (km)</th>
+                  <th class="px-3 py-2">Transport</th>
+                  <th class="px-3 py-2">Flüge/Jahr</th>
+                  <th class="px-3 py-2">CO2 gesamt (kg)</th>
+                </tr>
+              </thead>
+              <tbody
+                id="surveyRows"
+                hx-get="http://localhost:3000/partials/surveys/public"
+                hx-trigger="load, refreshDashboard from:body"
+                hx-swap="innerHTML"
+              >
+                <tr>
+                  <td colspan="7" class="px-3 py-4 text-center text-slate-500">Lade Daten...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <!-- Footer -->
+      <footer class="border-t border-slate-300 bg-white py-8">
+        <div class="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+          <!-- Navigation Links -->
+          <nav class="flex flex-wrap gap-4 text-sm md:gap-6">
+            <a href="impressum.html" class="font-semibold text-slate-700 hover:text-red-600">Impressum</a>
+            <a href="offenlegung.html" class="font-semibold text-slate-700 hover:text-red-600">Offenlegung</a>
+            <a href="datenschutz.html" class="font-semibold text-slate-700 hover:text-red-600">Datenschutz</a>
+            <a href="kontakt.html" class="font-semibold text-slate-700 hover:text-red-600">Kontakt</a>
+            <a href="agb.html" class="font-semibold text-slate-700 hover:text-red-600">AGB</a>
+            <a href="verfuegbarkeit.html" class="font-semibold text-slate-700 hover:text-red-600">Verfügbarkeit</a>
+            <a href="medientransparenz.html" class="font-semibold text-slate-700 hover:text-red-600">Medientransparenz</a>
+            <a href="barrierefreiheit.html" class="font-semibold text-slate-700 hover:text-red-600">Barrierefreiheit</a>
+          </nav>
+
+          <!-- Social Media Icons -->
+          <div class="flex justify-end gap-4">
+            <a href="#" class="text-slate-600 hover:text-red-600" title="YouTube">
+              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19.615 3.175c-3.673-1.104-11.558-1.104-15.231 0-4.083 1.227-4.823 5.686-4.88 15.825.058 10.14.797 14.598 4.88 15.825 3.673 1.104 11.558 1.104 15.231 0 4.083-1.227 4.823-5.686 4.88-15.825-.058-10.14-.797-14.598-4.88-15.825zm-10.615 12.582v8.756h-2.594v-20.151h2.594v2.404c.674-.1 1.38-.204 2.209-.204 2.28 0 4.585.914 4.585 3.079v2.294c0 2.165-2.305 3.079-4.585 3.079-.829 0-1.535-.104-2.209-.204v9.747z"></path>
+              </svg>
+            </a>
+            <a href="#" class="text-slate-600 hover:text-red-600" title="Facebook">
+              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path>
+              </svg>
+            </a>
+            <a href="#" class="text-slate-600 hover:text-red-600" title="LinkedIn">
+              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"></path>
+              </svg>
+            </a>
+            <a href="#" class="text-slate-600 hover:text-red-600" title="Instagram">
+              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0m5.521 12.912c.142 2.818-2.145 5.253-5.021 5.253-2.877 0-5.196-2.435-5.021-5.253-.032-.645.063-1.282.282-1.896H5.896v4.811c0 .955.777 1.732 1.732 1.732h8.744c.955 0 1.732-.777 1.732-1.732v-4.811h-1.063c.219.614.314 1.251.282 1.896zM12 4.865c3.045 0 5.54 2.495 5.54 5.54 0 3.045-2.495 5.54-5.54 5.54s-5.54-2.495-5.54-5.54c0-3.045 2.495-5.54 5.54-5.54z"></path>
+              </svg>
+            </a>
+          </div>
         </div>
-      </div>
-    </header>
+      </footer>
+    </div>
 
-    <main class="mt-6 grid gap-6 lg:grid-cols-12">
-      <section class="rounded-2xl bg-white p-5 shadow lg:col-span-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-semibold">Login</h2>
-          <button id="toggleAuth" type="button" class="text-sm font-medium text-rose-700 hover:text-rose-900">Noch kein Konto?</button>
-        </div>
+    </div>
 
-        <form id="loginForm" class="mt-4 space-y-3" hx-post="http://localhost:3000/auth/login-hx" hx-target="#authFeedback" hx-swap="innerHTML">
-          <input name="email" type="email" placeholder="name@evn.at" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none" />
-          <input name="password" type="password" placeholder="Passwort" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none" />
-          <button type="submit" class="w-full rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700">Einloggen</button>
-        </form>
+    <!-- Scripts -->
+    <script>
+      const API_URL = "http://localhost:3000";
+      const modeLabel = document.getElementById("modeLabel");
+      const sessionText = document.getElementById("sessionText");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const adminLink = document.getElementById("adminLink");
+      const toggleAuth = document.getElementById("toggleAuth");
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+      const surveyRows = document.getElementById("surveyRows");
+      const summaryGrid = document.getElementById("summaryGrid");
+      const hoverInfo = document.getElementById("hoverInfo");
 
-        <form id="registerForm" class="mt-4 hidden space-y-3" hx-post="http://localhost:3000/auth/register-hx" hx-target="#authFeedback" hx-swap="innerHTML">
-          <input name="name" type="text" placeholder="Vorname Nachname" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none" />
-          <input name="email" type="email" placeholder="name@evn.at" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none" />
-          <input name="password" type="password" placeholder="Mind. 6 Zeichen" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none" />
-          <button type="submit" class="w-full rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-900">Registrieren</button>
-        </form>
+      let transportChart;
+      let flightChart;
+      let co2Chart;
 
-        <div id="authFeedback" class="mt-3 min-h-5 text-sm"></div>
-
-        <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <div class="text-xs uppercase tracking-wide text-slate-500">Status</div>
-          <div id="sessionText" class="mt-1 text-sm font-medium">Oeffentlicher Zugriff aktiv</div>
-          <a id="adminLink" href="admin.html" class="mt-2 hidden text-sm font-medium text-sky-700 hover:text-sky-900">Zum Admin-Panel</a>
-          <button id="logoutBtn" type="button" class="mt-2 hidden text-sm font-medium text-rose-700 hover:text-rose-900">Logout</button>
-        </div>
-      </section>
-
-      <section class="rounded-2xl bg-white p-5 shadow lg:col-span-8">
-        <div id="summaryGrid" class="grid gap-3 md:grid-cols-3"
-          hx-get="http://localhost:3000/partials/summary/public"
-          hx-trigger="load, refreshDashboard from:body"
-          hx-swap="innerHTML">
-          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">Lade Summary...</div>
-        </div>
-
-        <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Transport-Verteilung</div>
-            <div class="h-56"><canvas id="transportChart"></canvas></div>
-          </article>
-          <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Fluege pro Jahr</div>
-            <div class="h-56"><canvas id="flightChart"></canvas></div>
-          </article>
-          <article class="rounded-xl border border-slate-200 bg-slate-50 p-3 md:col-span-2 xl:col-span-1">
-            <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">CO2 nach Transport</div>
-            <div class="h-56"><canvas id="co2Chart"></canvas></div>
-          </article>
-        </div>
-
-        <div class="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-          <span class="font-semibold">Hover:</span>
-          <span id="hoverInfo" class="text-slate-700">Chart-Segment anfahren.</span>
-        </div>
-
-        <div class="mt-5 overflow-x-auto rounded-xl border border-slate-200">
-          <table class="min-w-full text-left text-sm">
-            <thead class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
-              <tr>
-                <th class="px-3 py-2">ID</th>
-                <th class="px-3 py-2">Mitarbeiter</th>
-                <th class="px-3 py-2">Arbeitstage</th>
-                <th class="px-3 py-2">Distanz (km)</th>
-                <th class="px-3 py-2">Transport</th>
-                <th class="px-3 py-2">Fluege/Jahr</th>
-                <th class="px-3 py-2">CO2 gesamt (kg)</th>
-              </tr>
-            </thead>
-            <tbody id="surveyRows"
-              hx-get="http://localhost:3000/partials/surveys/public"
-              hx-trigger="load, refreshDashboard from:body"
-              hx-swap="innerHTML">
-              <tr><td colspan="7" class="px-3 py-4 text-center text-slate-500">Lade Daten...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    const API_URL = "http://localhost:3000";
-    const modeLabel = document.getElementById("modeLabel");
-    const sessionText = document.getElementById("sessionText");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const adminLink = document.getElementById("adminLink");
-    const toggleAuth = document.getElementById("toggleAuth");
-    const loginForm = document.getElementById("loginForm");
-    const registerForm = document.getElementById("registerForm");
-    const surveyRows = document.getElementById("surveyRows");
-    const summaryGrid = document.getElementById("summaryGrid");
-    const hoverInfo = document.getElementById("hoverInfo");
-
-    let transportChart;
-    let flightChart;
-    let co2Chart;
-
-    function setToken(token) {
-      if (token) {
-        localStorage.setItem("token", token);
-      } else {
-        localStorage.removeItem("token");
+      // ==========================================
+      // Storage Functions
+      // ==========================================
+      function setToken(token) {
+        if (token) {
+          localStorage.setItem("token", token);
+        } else {
+          localStorage.removeItem("token");
+        }
       }
-    }
 
-    function getToken() {
-      return localStorage.getItem("token");
-    }
-
-    function setRole(role) {
-      if (role) {
-        localStorage.setItem("role", role);
-      } else {
-        localStorage.removeItem("role");
+      function getToken() {
+        return localStorage.getItem("token");
       }
-    }
 
-    function getRole() {
-      return localStorage.getItem("role");
-    }
+      function setRole(role) {
+        if (role) {
+          localStorage.setItem("role", role);
+        } else {
+          localStorage.removeItem("role");
+        }
+      }
 
-    function isAdminRole(role) {
-      return role === "ADMIN" || role === "SUPER_ADMIN";
-    }
+      function getRole() {
+        return localStorage.getItem("role");
+      }
 
-    function isPrivateMode() {
-      return Boolean(getToken());
-    }
+      // ==========================================
+      // Auth Functions
+      // ==========================================
+      function isAdminRole(role) {
+        return role === "ADMIN" || role === "SUPER_ADMIN";
+      }
 
-    function applyMode() {
-      const privateMode = isPrivateMode();
-      const role = getRole();
-      modeLabel.textContent = privateMode ? `Eingeloggt (${role || "?"})` : "Oeffentlich";
-      sessionText.textContent = privateMode ? "Erweiterte Daten sichtbar" : "Oeffentlicher Zugriff aktiv";
-      logoutBtn.classList.toggle("hidden", !privateMode);
-      adminLink.classList.toggle("hidden", !(privateMode && isAdminRole(role)));
+      function isPrivateMode() {
+        return Boolean(getToken());
+      }
 
-      surveyRows.setAttribute(
-        "hx-get",
-        privateMode ? `${API_URL}/partials/surveys/private` : `${API_URL}/partials/surveys/public`
-      );
-      summaryGrid.setAttribute(
-        "hx-get",
-        privateMode ? `${API_URL}/partials/summary/private` : `${API_URL}/partials/summary/public`
-      );
-    }
+      function applyMode() {
+        const privateMode = isPrivateMode();
+        const role = getRole();
+        modeLabel.textContent = privateMode ? `Eingeloggt (${role || "?"})` : "Öffentlich";
+        sessionText.textContent = privateMode ? "Erweiterte Daten sichtbar" : "Öffentlicher Zugriff aktiv";
+        logoutBtn.classList.toggle("hidden", !privateMode);
+        adminLink.classList.toggle("hidden", !(privateMode && isAdminRole(role)));
 
-    function normalizeTransport(value) {
-      if (!value) return "Unbekannt";
-      return String(value).replaceAll("_", " ");
-    }
+        surveyRows.setAttribute(
+          "hx-get",
+          privateMode ? `${API_URL}/partials/surveys/private` : `${API_URL}/partials/surveys/public`
+        );
+        summaryGrid.setAttribute(
+          "hx-get",
+          privateMode ? `${API_URL}/partials/summary/private` : `${API_URL}/partials/summary/public`
+        );
+      }
 
-    function flightsBucket(value) {
-      if (value === null || value === undefined) return "Keine Angabe";
-      if (value <= 0) return "0";
-      if (value <= 2) return "1-2";
-      if (value <= 5) return "2-5";
-      return ">5";
-    }
+      // ==========================================
+      // Data Functions
+      // ==========================================
+      function normalizeTransport(value) {
+        if (!value) return "Unbekannt";
+        return String(value).replaceAll("_", " ");
+      }
 
-    function chartOptions(formatter) {
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 700, easing: "easeOutQuart" },
-        plugins: {
-          legend: { labels: { color: "#334155", boxWidth: 12 } },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.label}: ${ctx.formattedValue}`,
+      function flightsBucket(value) {
+        if (value === null || value === undefined) return "Keine Angabe";
+        if (value <= 0) return "0";
+        if (value <= 2) return "1-2";
+        if (value <= 5) return "2-5";
+        return ">5";
+      }
+
+      // ==========================================
+      // Chart Functions
+      // ==========================================
+      function chartOptions(formatter) {
+        return {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 700, easing: "easeOutQuart" },
+          plugins: {
+            legend: { labels: { color: "#334155", boxWidth: 12 } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.label}: ${ctx.formattedValue}`,
+              },
             },
           },
-        },
-        onHover: (evt, elements, chart) => {
-          chart.canvas.style.cursor = elements.length ? "pointer" : "default";
-          if (!elements.length) {
-            hoverInfo.textContent = "Chart-Segment anfahren.";
+          onHover: (evt, elements, chart) => {
+            chart.canvas.style.cursor = elements.length ? "pointer" : "default";
+            if (!elements.length) {
+              hoverInfo.textContent = "Chart-Segment anfahren.";
+              return;
+            }
+            const index = elements[0].index;
+            const label = chart.data.labels[index];
+            const value = chart.data.datasets[0].data[index];
+            hoverInfo.textContent = formatter(label, value);
+          },
+        };
+      }
+
+      async function loadChartData() {
+        const privateMode = isPrivateMode();
+        const endpoint = privateMode ? `${API_URL}/surveys` : `${API_URL}/surveys/public`;
+        const headers = {};
+        if (privateMode) {
+          headers.Authorization = `Bearer ${getToken()}`;
+        }
+
+        try {
+          const res = await fetch(endpoint, { headers });
+          if (!res.ok) {
+            if (privateMode && res.status === 401) {
+              setToken(null);
+              setRole(null);
+              applyMode();
+              document.body.dispatchEvent(new Event("refreshDashboard"));
+              return loadChartData();
+            }
             return;
           }
-          const index = elements[0].index;
-          const label = chart.data.labels[index];
-          const value = chart.data.datasets[0].data[index];
-          hoverInfo.textContent = formatter(label, value);
-        },
-      };
-    }
-
-    async function loadChartData() {
-      const privateMode = isPrivateMode();
-      const endpoint = privateMode ? `${API_URL}/surveys` : `${API_URL}/surveys/public`;
-      const headers = {};
-      if (privateMode) {
-        headers.Authorization = `Bearer ${getToken()}`;
-      }
-
-      try {
-        const res = await fetch(endpoint, { headers });
-        if (!res.ok) {
-          if (privateMode && res.status === 401) {
-            setToken(null);
-            setRole(null);
-            applyMode();
-            document.body.dispatchEvent(new Event("refreshDashboard"));
-            return loadChartData();
-          }
-          return;
+          const rows = await res.json();
+          renderCharts(rows);
+        } catch (_) {
+          hoverInfo.textContent = "API nicht erreichbar.";
         }
-        const rows = await res.json();
-        renderCharts(rows);
-      } catch (_) {
-        hoverInfo.textContent = "API nicht erreichbar.";
       }
-    }
 
-    function renderCharts(rows) {
-      const transportMap = new Map();
-      const flightsMap = new Map();
-      const co2Map = new Map();
+      function renderCharts(rows) {
+        const transportMap = new Map();
+        const flightsMap = new Map();
+        const co2Map = new Map();
 
-      rows.forEach((row) => {
-        const transport = normalizeTransport(row.transportMain);
-        transportMap.set(transport, (transportMap.get(transport) || 0) + 1);
+        rows.forEach((row) => {
+          const transport = normalizeTransport(row.transportMain);
+          transportMap.set(transport, (transportMap.get(transport) || 0) + 1);
 
-        const flightKey = flightsBucket(row.flightsPerYear);
-        flightsMap.set(flightKey, (flightsMap.get(flightKey) || 0) + 1);
+          const flightKey = flightsBucket(row.flightsPerYear);
+          flightsMap.set(flightKey, (flightsMap.get(flightKey) || 0) + 1);
 
-        const current = co2Map.get(transport) || { sum: 0, count: 0 };
-        current.sum += Number(row.totalCo2Kg || 0);
-        current.count += 1;
-        co2Map.set(transport, current);
-      });
+          const current = co2Map.get(transport) || { sum: 0, count: 0 };
+          current.sum += Number(row.totalCo2Kg || 0);
+          current.count += 1;
+          co2Map.set(transport, current);
+        });
 
-      const transportLabels = [...transportMap.keys()];
-      const transportData = [...transportMap.values()];
-      const flightLabels = [...flightsMap.keys()];
-      const flightData = [...flightsMap.values()];
-      const co2Labels = [...co2Map.keys()];
-      const co2Data = [...co2Map.values()].map((x) => Number((x.sum / x.count).toFixed(1)));
+        const transportLabels = [...transportMap.keys()];
+        const transportData = [...transportMap.values()];
+        const flightLabels = [...flightsMap.keys()];
+        const flightData = [...flightsMap.values()];
+        const co2Labels = [...co2Map.keys()];
+        const co2Data = [...co2Map.values()].map((x) => Number((x.sum / x.count).toFixed(1)));
 
-      if (transportChart) transportChart.destroy();
-      if (flightChart) flightChart.destroy();
-      if (co2Chart) co2Chart.destroy();
+        if (transportChart) transportChart.destroy();
+        if (flightChart) flightChart.destroy();
+        if (co2Chart) co2Chart.destroy();
 
-      transportChart = new Chart(document.getElementById("transportChart"), {
-        type: "pie",
-        data: {
-          labels: transportLabels,
-          datasets: [{
-            data: transportData,
-            backgroundColor: ["#e11d48", "#0ea5e9", "#f59e0b", "#22c55e", "#6366f1", "#334155"],
-            borderColor: "#ffffff",
-            borderWidth: 2,
-            hoverOffset: 24,
-          }],
-        },
-        options: chartOptions((label, value) => `${label}: ${value} Personen`),
-      });
-
-      flightChart = new Chart(document.getElementById("flightChart"), {
-        type: "doughnut",
-        data: {
-          labels: flightLabels,
-          datasets: [{
-            data: flightData,
-            backgroundColor: ["#334155", "#059669", "#d97706", "#dc2626", "#7c3aed"],
-            borderColor: "#ffffff",
-            borderWidth: 2,
-            hoverOffset: 20,
-          }],
-        },
-        options: chartOptions((label, value) => `Fluege ${label}: ${value} Personen`),
-      });
-
-      co2Chart = new Chart(document.getElementById("co2Chart"), {
-        type: "bar",
-        data: {
-          labels: co2Labels,
-          datasets: [{
-            label: "kg CO2",
-            data: co2Data,
-            backgroundColor: "rgba(14,165,233,0.7)",
-            borderColor: "#0369a1",
-            borderWidth: 1,
-            borderRadius: 8,
-            hoverBackgroundColor: "rgba(225,29,72,0.7)",
-          }],
-        },
-        options: {
-          ...chartOptions((label, value) => `${label}: ${value} kg CO2`),
-          scales: {
-            x: { ticks: { color: "#334155" } },
-            y: { beginAtZero: true, ticks: { color: "#334155" } },
+        // Transport Chart
+        transportChart = new Chart(document.getElementById("transportChart"), {
+          type: "pie",
+          data: {
+            labels: transportLabels,
+            datasets: [
+              {
+                data: transportData,
+                backgroundColor: ["#dc2626", "#0ea5e9", "#f59e0b", "#22c55e", "#6366f1", "#334155"],
+                borderColor: "#ffffff",
+                borderWidth: 2,
+                hoverOffset: 24,
+              },
+            ],
           },
-        },
-      });
-    }
+          options: chartOptions((label, value) => `${label}: ${value} Personen`),
+        });
 
-    toggleAuth.addEventListener("click", () => {
-      loginForm.classList.toggle("hidden");
-      registerForm.classList.toggle("hidden");
-      toggleAuth.textContent = loginForm.classList.contains("hidden")
-        ? "Bereits registriert?"
-        : "Noch kein Konto?";
-    });
+        // Flight Chart
+        flightChart = new Chart(document.getElementById("flightChart"), {
+          type: "doughnut",
+          data: {
+            labels: flightLabels,
+            datasets: [
+              {
+                data: flightData,
+                backgroundColor: ["#334155", "#059669", "#d97706", "#dc2626", "#7c3aed"],
+                borderColor: "#ffffff",
+                borderWidth: 2,
+                hoverOffset: 20,
+              },
+            ],
+          },
+          options: chartOptions((label, value) => `Flüge ${label}: ${value} Personen`),
+        });
 
-    logoutBtn.addEventListener("click", () => {
-      setToken(null);
-      setRole(null);
-      applyMode();
-      htmx.trigger("body", "refreshDashboard");
-      loadChartData();
-    });
-
-    document.body.addEventListener("authChanged", (event) => {
-      const token = event.detail && event.detail.token;
-      const role = event.detail && event.detail.role;
-      if (!token) return;
-      setToken(token);
-      setRole(role || null);
-      applyMode();
-      htmx.trigger("body", "refreshDashboard");
-      loadChartData();
-    });
-
-    document.body.addEventListener("htmx:configRequest", (event) => {
-      const token = getToken();
-      if (token) {
-        event.detail.headers.Authorization = `Bearer ${token}`;
+        // CO2 Chart
+        co2Chart = new Chart(document.getElementById("co2Chart"), {
+          type: "bar",
+          data: {
+            labels: co2Labels,
+            datasets: [
+              {
+                label: "kg CO2",
+                data: co2Data,
+                backgroundColor: "rgba(220,38,38,0.7)",
+                borderColor: "#991b1b",
+                borderWidth: 1,
+                borderRadius: 8,
+                hoverBackgroundColor: "rgba(225,29,72,0.7)",
+              },
+            ],
+          },
+          options: {
+            ...chartOptions((label, value) => `${label}: ${value} kg CO2`),
+            scales: {
+              x: { ticks: { color: "#334155" } },
+              y: { beginAtZero: true, ticks: { color: "#334155" } },
+            },
+          },
+        });
       }
-    });
 
-    document.body.addEventListener("htmx:afterSwap", (event) => {
-      if (event.target.id === "surveyRows" || event.target.id === "summaryGrid") {
-        loadC
+      // ==========================================
+      // Event Listeners
+      // ==========================================
+      toggleAuth.addEventListener("click", () => {
+        loginForm.classList.toggle("hidden");
+        registerForm.classList.toggle("hidden");
+        toggleAuth.textContent = loginForm.classList.contains("hidden") ? "Bereits registriert?" : "Noch kein Konto?";
+      });
+
+      logoutBtn.addEventListener("click", () => {
+        setToken(null);
+        setRole(null);
+        applyMode();
+        htmx.trigger("body", "refreshDashboard");
+        loadChartData();
+      });
+
+      document.body.addEventListener("authChanged", (event) => {
+        const token = event.detail && event.detail.token;
+        const role = event.detail && event.detail.role;
+        if (!token) return;
+        setToken(token);
+        setRole(role || null);
+        applyMode();
+        htmx.trigger("body", "refreshDashboard");
+        loadChartData();
+      });
+
+      document.body.addEventListener("htmx:configRequest", (event) => {
+        const token = getToken();
+        if (token) {
+          event.detail.headers.Authorization = `Bearer ${token}`;
+        }
+      });
+
+      document.body.addEventListener("htmx:afterSwap", (event) => {
+        if (event.target.id === "surveyRows" || event.target.id === "summaryGrid") {
+          loadChartData();
+        }
+      });
+
+      // ==========================================
+      // Initialize
+      // ==========================================
+      applyMode();
+      loadChartData();
+    </script>
+
+    <!-- Bottom Info Bar -->
+    <div class="border-t border-slate-300 bg-white">
+      <div class="mx-auto max-w-7xl px-6 py-6 md:p-10">
+        <div class="flex flex-col justify-between gap-6 md:flex-row">
+          <!-- Logo and Tagline -->
+          <div>
+            <div class="text-3xl font-black">
+              <span class="text-slate-900">E</span><span class="text-red-600">V</span><span class="text-slate-900">N</span>
+            </div>
+            <p class="mt-1 text-sm text-slate-600">Energie. Wasser. Leben.</p>
+          </div>
+          
+          <!-- Contact Info -->
+          <div class="text-right text-sm">
+            <div class="flex items-center justify-end gap-2">
+              <span class="text-lg">☎</span>
+              <span class="font-semibold text-slate-900">0800 800 100</span>
+            </div>
+            <p class="mt-1 text-xs text-slate-600">
+              Wir sind gerne für Sie da. Kostenfrei aus ganz Österreich von<br />
+              <span class="font-semibold">Montag – Donnerstag von 7 bis 19 Uhr</span><br />
+              <span class="font-semibold">Freitag von 7 bis 17 Uhr</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
