@@ -358,16 +358,23 @@
 
       async function loadChartData() {
         const privateMode = isPrivateMode();
-        const endpoint = privateMode ? `${API_URL}/surveys` : `${API_URL}/surveys/public`;
         const headers = {};
-        if (privateMode) {
-          headers.Authorization = `Bearer ${getToken()}`;
-        }
+        if (privateMode) headers.Authorization = `Bearer ${getToken()}`;
 
         try {
-          const res = await fetch(endpoint, { headers });
+          if (!privateMode) {
+            // public aggregated endpoint (pre-aggregated for charts)
+            const res = await fetch(`${API_URL}/public/aggregations`);
+            if (!res.ok) return;
+            const agg = await res.json();
+            renderAggregatedCharts(agg);
+            return;
+          }
+
+          // private mode: fetch raw surveys and render as before
+          const res = await fetch(`${API_URL}/surveys`, { headers });
           if (!res.ok) {
-            if (privateMode && res.status === 401) {
+            if (res.status === 401) {
               setToken(null);
               setRole(null);
               applyMode();
@@ -378,9 +385,75 @@
           }
           const rows = await res.json();
           renderCharts(rows);
-        } catch (_) {
+        } catch (err) {
+          console.error(err);
           hoverInfo.textContent = "API nicht erreichbar.";
         }
+      }
+
+      function renderAggregatedCharts(agg) {
+        // agg: { byTransport: {...}, flights: {...}, months: [...], avgCo2ByMonth: [...] }
+        const transportLabels = Object.keys(agg.byTransport || {});
+        const transportData = transportLabels.map((l) => agg.byTransport[l]);
+
+        const flightLabels = Object.keys(agg.flights || {});
+        const flightData = flightLabels.map((l) => agg.flights[l]);
+
+        const co2Labels = agg.months || [];
+        const co2Data = agg.avgCo2ByMonth || [];
+
+        if (transportChart) transportChart.destroy();
+        if (flightChart) flightChart.destroy();
+        if (co2Chart) co2Chart.destroy();
+
+        transportChart = new Chart(document.getElementById("transportChart"), {
+          type: "pie",
+          data: {
+            labels: transportLabels,
+            datasets: [{
+              data: transportData,
+              backgroundColor: ["#dc2626", "#0ea5e9", "#f59e0b", "#22c55e", "#6366f1", "#334155"],
+              borderColor: "#ffffff",
+              borderWidth: 2,
+              hoverOffset: 24,
+            }],
+          },
+          options: chartOptions((label, value) => `${label}: ${value} Personen`),
+        });
+
+        flightChart = new Chart(document.getElementById("flightChart"), {
+          type: "doughnut",
+          data: {
+            labels: flightLabels,
+            datasets: [{
+              data: flightData,
+              backgroundColor: ["#334155", "#059669", "#d97706", "#dc2626", "#7c3aed"],
+              borderColor: "#ffffff",
+              borderWidth: 2,
+              hoverOffset: 20,
+            }],
+          },
+          options: chartOptions((label, value) => `Flüge ${label}: ${value} Personen`),
+        });
+
+        co2Chart = new Chart(document.getElementById("co2Chart"), {
+          type: "bar",
+          data: {
+            labels: co2Labels,
+            datasets: [{
+              label: "kg CO2",
+              data: co2Data,
+              backgroundColor: "rgba(220,38,38,0.7)",
+              borderColor: "#991b1b",
+              borderWidth: 1,
+              borderRadius: 8,
+            }],
+          },
+          options: {
+            ...chartOptions((label, value) => `${label}: ${value} kg CO2`),
+            scales: { x: { ticks: { color: "#334155" } }, y: { beginAtZero: true, ticks: { color: "#334155" } } },
+          },
+        });
       }
 
       function renderCharts(rows) {
@@ -521,6 +594,18 @@
       // ==========================================
       applyMode();
       loadChartData();
+
+      // load emission factors for potential frontend use
+      let emissionFactors = [];
+      async function loadEmissionFactors() {
+        try {
+          const res = await fetch(`${API_URL}/emission-factors`);
+          if (res.ok) emissionFactors = await res.json();
+        } catch (err) {
+          console.warn("Failed to load emission factors:", err);
+        }
+      }
+      loadEmissionFactors();
     </script>
 
     <!-- Bottom Info Bar -->

@@ -66,15 +66,19 @@ app.use(
       "HX-Prompt",
     ],
     exposedHeaders: ["HX-Trigger"],
-  })
+  }),
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 function signToken(user) {
-  return jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-    expiresIn: "7d",
-  });
+  return jwt.sign(
+    { sub: user.id, email: user.email, role: user.role },
+    JWT_SECRET,
+    {
+      expiresIn: "7d",
+    },
+  );
 }
 
 function escapeHtml(value) {
@@ -86,7 +90,15 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-async function writeAudit({ actorUserId, action, targetType, targetId, before, after, ipAddress }) {
+async function writeAudit({
+  actorUserId,
+  action,
+  targetType,
+  targetId,
+  before,
+  after,
+  ipAddress,
+}) {
   await prisma.auditLog.create({
     data: {
       actorUserId: actorUserId || null,
@@ -115,7 +127,13 @@ async function auth(req, res, next) {
     const payload = jwt.verify(token, JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, email: true, name: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+      },
     });
     if (!user) return res.status(401).json({ error: "Invalid token" });
     req.authUser = user;
@@ -127,7 +145,8 @@ async function auth(req, res, next) {
 
 function requireRole(...allowed) {
   return (req, res, next) => {
-    if (!req.authUser) return res.status(401).json({ error: "Not authenticated" });
+    if (!req.authUser)
+      return res.status(401).json({ error: "Not authenticated" });
     if (!allowed.includes(req.authUser.role)) {
       return res.status(403).json({ error: "Insufficient role" });
     }
@@ -203,7 +222,7 @@ function adminUsersRowsHtml(users) {
         <td class="px-3 py-2">${u._count.surveys}</td>
         <td class="px-3 py-2">${new Date(u.createdAt).toLocaleDateString("de-AT")}</td>
       </tr>
-    `
+    `,
     )
     .join("");
 }
@@ -223,7 +242,7 @@ function auditRowsHtml(logs) {
         <td class="px-3 py-2">${escapeHtml(l.targetId || "-")}</td>
         <td class="px-3 py-2">${new Date(l.createdAt).toLocaleString("de-AT")}</td>
       </tr>
-    `
+    `,
     )
     .join("");
 }
@@ -242,7 +261,7 @@ function uploadRowsHtml(items) {
         <td class="px-3 py-2">${escapeHtml(f.uploadedBy?.email || "-")}</td>
         <td class="px-3 py-2">${new Date(f.createdAt).toLocaleString("de-AT")}</td>
       </tr>
-    `
+    `,
     )
     .join("");
 }
@@ -253,10 +272,14 @@ async function ensureInitialAdmin() {
   });
   if (adminCount > 0) return;
 
-  const byEmail = await prisma.user.findUnique({ where: { email: SUPER_ADMIN_EMAIL } });
+  const byEmail = await prisma.user.findUnique({
+    where: { email: SUPER_ADMIN_EMAIL },
+  });
   if (byEmail) {
     const passwordNeedsHash = !byEmail.password.startsWith("$2");
-    const password = passwordNeedsHash ? await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10) : byEmail.password;
+    const password = passwordNeedsHash
+      ? await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10)
+      : byEmail.password;
     await prisma.user.update({
       where: { id: byEmail.id },
       data: { role: ROLE.SUPER_ADMIN, password },
@@ -331,20 +354,37 @@ app.post("/auth/login-hx", async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      return res.status(400).send(`<div class="text-sm text-red-700">Email und Passwort sind erforderlich.</div>`);
+      return res
+        .status(400)
+        .send(
+          `<div class="text-sm text-red-700">Email und Passwort sind erforderlich.</div>`,
+        );
     }
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(401).send(`<div class="text-sm text-red-700">Login fehlgeschlagen.</div>`);
+    if (!user)
+      return res
+        .status(401)
+        .send(`<div class="text-sm text-red-700">Login fehlgeschlagen.</div>`);
 
     const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.status(401).send(`<div class="text-sm text-red-700">Login fehlgeschlagen.</div>`);
+    if (!ok)
+      return res
+        .status(401)
+        .send(`<div class="text-sm text-red-700">Login fehlgeschlagen.</div>`);
 
     const token = signToken(user);
-    res.setHeader("HX-Trigger", JSON.stringify({ authChanged: { token, role: user.role } }));
-    return res.send(`<div class="text-sm text-emerald-700">Login erfolgreich (${user.role}).</div>`);
+    res.setHeader(
+      "HX-Trigger",
+      JSON.stringify({ authChanged: { token, role: user.role } }),
+    );
+    return res.send(
+      `<div class="text-sm text-emerald-700">Login erfolgreich (${user.role}).</div>`,
+    );
   } catch (err) {
     console.error(err);
-    return res.status(500).send(`<div class="text-sm text-red-700">Login fehlgeschlagen.</div>`);
+    return res
+      .status(500)
+      .send(`<div class="text-sm text-red-700">Login fehlgeschlagen.</div>`);
   }
 });
 
@@ -352,12 +392,20 @@ app.post("/auth/register-hx", async (req, res) => {
   try {
     const { email, password, name } = req.body;
     if (!email || !password) {
-      return res.status(400).send(`<div class="text-sm text-red-700">Email und Passwort sind erforderlich.</div>`);
+      return res
+        .status(400)
+        .send(
+          `<div class="text-sm text-red-700">Email und Passwort sind erforderlich.</div>`,
+        );
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return res.status(400).send(`<div class="text-sm text-red-700">Email existiert bereits.</div>`);
+      return res
+        .status(400)
+        .send(
+          `<div class="text-sm text-red-700">Email existiert bereits.</div>`,
+        );
     }
 
     const hash = await bcrypt.hash(password, 10);
@@ -376,11 +424,20 @@ app.post("/auth/register-hx", async (req, res) => {
     });
 
     const token = signToken(user);
-    res.setHeader("HX-Trigger", JSON.stringify({ authChanged: { token, role: user.role } }));
-    return res.send(`<div class="text-sm text-emerald-700">Registrierung erfolgreich (${user.role}).</div>`);
+    res.setHeader(
+      "HX-Trigger",
+      JSON.stringify({ authChanged: { token, role: user.role } }),
+    );
+    return res.send(
+      `<div class="text-sm text-emerald-700">Registrierung erfolgreich (${user.role}).</div>`,
+    );
   } catch (err) {
     console.error(err);
-    return res.status(500).send(`<div class="text-sm text-red-700">Registrierung fehlgeschlagen.</div>`);
+    return res
+      .status(500)
+      .send(
+        `<div class="text-sm text-red-700">Registrierung fehlgeschlagen.</div>`,
+      );
   }
 });
 
@@ -430,9 +487,12 @@ app.get("/partials/summary/public", async (_req, res) => {
 
 app.get("/surveys", auth, async (req, res) => {
   if (req.authUser.role === ROLE.HR) {
-    return res.status(403).json({ error: "HR role can access only aggregated data" });
+    return res
+      .status(403)
+      .json({ error: "HR role can access only aggregated data" });
   }
-  const where = req.authUser.role === ROLE.EMPLOYEE ? { userId: req.authUser.id } : {};
+  const where =
+    req.authUser.role === ROLE.EMPLOYEE ? { userId: req.authUser.id } : {};
 
   const surveys = await prisma.survey.findMany({
     where,
@@ -462,10 +522,11 @@ app.get("/surveys/me", auth, requireRole(ROLE.EMPLOYEE), async (req, res) => {
 app.get("/partials/surveys/private", auth, async (req, res) => {
   if (req.authUser.role === ROLE.HR) {
     return res.send(
-      `<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">HR sieht nur aggregierte Daten.</td></tr>`
+      `<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">HR sieht nur aggregierte Daten.</td></tr>`,
     );
   }
-  const where = req.authUser.role === ROLE.EMPLOYEE ? { userId: req.authUser.id } : {};
+  const where =
+    req.authUser.role === ROLE.EMPLOYEE ? { userId: req.authUser.id } : {};
   const surveys = await prisma.survey.findMany({
     where,
     orderBy: { createdAt: "desc" },
@@ -484,7 +545,8 @@ app.get("/partials/surveys/private", auth, async (req, res) => {
 });
 
 app.get("/partials/summary/private", auth, async (req, res) => {
-  const where = req.authUser.role === ROLE.EMPLOYEE ? { userId: req.authUser.id } : {};
+  const where =
+    req.authUser.role === ROLE.EMPLOYEE ? { userId: req.authUser.id } : {};
   const surveys = await prisma.survey.findMany({
     where,
     orderBy: { createdAt: "desc" },
@@ -493,291 +555,364 @@ app.get("/partials/summary/private", auth, async (req, res) => {
   return res.send(summaryHtml(surveys));
 });
 
-app.get("/hr/aggregations", auth, requireRole(ROLE.HR, ROLE.ADMIN, ROLE.SUPER_ADMIN), async (_req, res) => {
-  const surveys = await prisma.survey.findMany({
-    select: {
-      transportMain: true,
-      totalCo2Kg: true,
-      officeDaysPerWeek: true,
-      distanceKm: true,
-      flightsPerYear: true,
-    },
-  });
+app.get(
+  "/hr/aggregations",
+  auth,
+  requireRole(ROLE.HR, ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (_req, res) => {
+    const surveys = await prisma.survey.findMany({
+      select: {
+        transportMain: true,
+        totalCo2Kg: true,
+        officeDaysPerWeek: true,
+        distanceKm: true,
+        flightsPerYear: true,
+      },
+    });
 
-  const byTransport = {};
-  let total = 0;
-  surveys.forEach((s) => {
-    const key = s.transportMain || "UNKNOWN";
-    byTransport[key] = (byTransport[key] || 0) + 1;
-    total += Number(s.totalCo2Kg || 0);
-  });
+    const byTransport = {};
+    let total = 0;
+    surveys.forEach((s) => {
+      const key = s.transportMain || "UNKNOWN";
+      byTransport[key] = (byTransport[key] || 0) + 1;
+      total += Number(s.totalCo2Kg || 0);
+    });
 
-  return res.json({
-    count: surveys.length,
-    avgCo2Kg: surveys.length ? Number((total / surveys.length).toFixed(2)) : 0,
-    byTransport,
-  });
-});
+    return res.json({
+      count: surveys.length,
+      avgCo2Kg: surveys.length
+        ? Number((total / surveys.length).toFixed(2))
+        : 0,
+      byTransport,
+    });
+  },
+);
 
-app.get("/admin/access", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), (_req, res) => {
-  return res.json({ allowed: true });
-});
+app.get(
+  "/admin/access",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  (_req, res) => {
+    return res.json({ allowed: true });
+  },
+);
 
-app.get("/admin/users", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (_req, res) => {
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      role: true,
-      createdAt: true,
-      _count: { select: { surveys: true } },
-    },
-  });
-  return res.json(users);
-});
+app.get(
+  "/admin/users",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (_req, res) => {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        _count: { select: { surveys: true } },
+      },
+    });
+    return res.json(users);
+  },
+);
 
-app.put("/admin/users/:id/role", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (req, res) => {
-  const userId = Number(req.params.id);
-  const { role } = req.body;
-  if (!Object.values(ROLE).includes(role)) {
-    return res.status(400).json({ error: "Invalid role" });
-  }
-
-  const before = await prisma.user.findUnique({ where: { id: userId } });
-  if (!before) return res.status(404).json({ error: "User not found" });
-
-  if (before.role === ROLE.SUPER_ADMIN && req.authUser.role !== ROLE.SUPER_ADMIN) {
-    return res.status(403).json({ error: "Only SUPER_ADMIN can modify SUPER_ADMIN role" });
-  }
-
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: { role },
-    select: { id: true, email: true, role: true, name: true },
-  });
-
-  await writeAudit({
-    actorUserId: req.authUser.id,
-    action: "ROLE_UPDATE",
-    targetType: "User",
-    targetId: userId,
-    before: { role: before.role },
-    after: { role: updated.role },
-    ipAddress: req.ip,
-  });
-
-  return res.json(updated);
-});
-
-app.get("/admin/surveys", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (_req, res) => {
-  const surveys = await prisma.survey.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { user: { select: { id: true, email: true, name: true, role: true } } },
-  });
-  return res.json(surveys);
-});
-
-app.patch("/admin/surveys/:id", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (req, res) => {
-  const surveyId = Number(req.params.id);
-  const patch = req.body || {};
-
-  const before = await prisma.survey.findUnique({ where: { id: surveyId } });
-  if (!before) return res.status(404).json({ error: "Survey not found" });
-
-  if (patch.distanceKm !== undefined) {
-    const n = Number(patch.distanceKm);
-    if (!Number.isFinite(n) || n < 0 || n > 500) {
-      return res.status(400).json({ error: "distanceKm out of range" });
+app.put(
+  "/admin/users/:id/role",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (req, res) => {
+    const userId = Number(req.params.id);
+    const { role } = req.body;
+    if (!Object.values(ROLE).includes(role)) {
+      return res.status(400).json({ error: "Invalid role" });
     }
-  }
-  if (patch.officeDaysPerWeek !== undefined) {
-    const n = Number(patch.officeDaysPerWeek);
-    if (!Number.isInteger(n) || n < 0 || n > 7) {
-      return res.status(400).json({ error: "officeDaysPerWeek out of range" });
+
+    const before = await prisma.user.findUnique({ where: { id: userId } });
+    if (!before) return res.status(404).json({ error: "User not found" });
+
+    if (
+      before.role === ROLE.SUPER_ADMIN &&
+      req.authUser.role !== ROLE.SUPER_ADMIN
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Only SUPER_ADMIN can modify SUPER_ADMIN role" });
     }
-  }
-  if (patch.totalCo2Kg !== undefined && patch.totalCo2Kg !== null) {
-    const n = Number(patch.totalCo2Kg);
-    if (!Number.isFinite(n) || n < 0) {
-      return res.status(400).json({ error: "totalCo2Kg invalid" });
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: { id: true, email: true, role: true, name: true },
+    });
+
+    await writeAudit({
+      actorUserId: req.authUser.id,
+      action: "ROLE_UPDATE",
+      targetType: "User",
+      targetId: userId,
+      before: { role: before.role },
+      after: { role: updated.role },
+      ipAddress: req.ip,
+    });
+
+    return res.json(updated);
+  },
+);
+
+app.get(
+  "/admin/surveys",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (_req, res) => {
+    const surveys = await prisma.survey.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { id: true, email: true, name: true, role: true } },
+      },
+    });
+    return res.json(surveys);
+  },
+);
+
+app.patch(
+  "/admin/surveys/:id",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (req, res) => {
+    const surveyId = Number(req.params.id);
+    const patch = req.body || {};
+
+    const before = await prisma.survey.findUnique({ where: { id: surveyId } });
+    if (!before) return res.status(404).json({ error: "Survey not found" });
+
+    if (patch.distanceKm !== undefined) {
+      const n = Number(patch.distanceKm);
+      if (!Number.isFinite(n) || n < 0 || n > 500) {
+        return res.status(400).json({ error: "distanceKm out of range" });
+      }
     }
-  }
-
-  const allowed = [
-    "officeDaysPerWeek",
-    "transportMain",
-    "alternativeTransportFreq",
-    "alternativeTransport",
-    "distanceKm",
-    "carType",
-    "flightsPerYear",
-    "flightDistanceKm",
-    "heatingType",
-    "warmWaterType",
-    "usesGreenElectricity",
-    "smartElectricityUsage",
-    "fireworkPerYear",
-    "co2Importance",
-    "totalCo2Kg",
-  ];
-
-  const data = {};
-  for (const key of allowed) {
-    if (Object.prototype.hasOwnProperty.call(patch, key)) {
-      data[key] = patch[key];
+    if (patch.officeDaysPerWeek !== undefined) {
+      const n = Number(patch.officeDaysPerWeek);
+      if (!Number.isInteger(n) || n < 0 || n > 7) {
+        return res
+          .status(400)
+          .json({ error: "officeDaysPerWeek out of range" });
+      }
     }
-  }
+    if (patch.totalCo2Kg !== undefined && patch.totalCo2Kg !== null) {
+      const n = Number(patch.totalCo2Kg);
+      if (!Number.isFinite(n) || n < 0) {
+        return res.status(400).json({ error: "totalCo2Kg invalid" });
+      }
+    }
 
-  const updated = await prisma.survey.update({ where: { id: surveyId }, data });
+    const allowed = [
+      "officeDaysPerWeek",
+      "transportMain",
+      "alternativeTransportFreq",
+      "alternativeTransport",
+      "distanceKm",
+      "carType",
+      "flightsPerYear",
+      "flightDistanceKm",
+      "heatingType",
+      "warmWaterType",
+      "usesGreenElectricity",
+      "smartElectricityUsage",
+      "fireworkPerYear",
+      "co2Importance",
+      "totalCo2Kg",
+    ];
 
-  await writeAudit({
-    actorUserId: req.authUser.id,
-    action: "SURVEY_UPDATE",
-    targetType: "Survey",
-    targetId: surveyId,
-    before,
-    after: updated,
-    ipAddress: req.ip,
-  });
+    const data = {};
+    for (const key of allowed) {
+      if (Object.prototype.hasOwnProperty.call(patch, key)) {
+        data[key] = patch[key];
+      }
+    }
 
-  return res.json(updated);
-});
+    const updated = await prisma.survey.update({
+      where: { id: surveyId },
+      data,
+    });
 
-app.get("/admin/audit-logs", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (req, res) => {
-  const take = Math.min(Number(req.query.take) || 200, 1000);
-  const logs = await prisma.auditLog.findMany({
-    take,
-    orderBy: { createdAt: "desc" },
-    include: {
-      actor: { select: { id: true, email: true, role: true } },
-    },
-  });
-  return res.json(logs);
-});
+    await writeAudit({
+      actorUserId: req.authUser.id,
+      action: "SURVEY_UPDATE",
+      targetType: "Survey",
+      targetId: surveyId,
+      before,
+      after: updated,
+      ipAddress: req.ip,
+    });
 
-app.get("/admin/export.csv", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (req, res) => {
-  const surveys = await prisma.survey.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { user: { select: { email: true, name: true, role: true } } },
-  });
+    return res.json(updated);
+  },
+);
 
-  const header = [
-    "id",
-    "createdAt",
-    "userEmail",
-    "userName",
-    "userRole",
-    "transportMain",
-    "distanceKm",
-    "flightsPerYear",
-    "totalCo2Kg",
-  ];
+app.get(
+  "/admin/audit-logs",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (req, res) => {
+    const take = Math.min(Number(req.query.take) || 200, 1000);
+    const logs = await prisma.auditLog.findMany({
+      take,
+      orderBy: { createdAt: "desc" },
+      include: {
+        actor: { select: { id: true, email: true, role: true } },
+      },
+    });
+    return res.json(logs);
+  },
+);
 
-  const lines = [header.join(",")];
-  surveys.forEach((s) => {
-    lines.push(
-      [
-        s.id,
-        s.createdAt.toISOString(),
-        s.user?.email || "",
-        s.user?.name || "",
-        s.user?.role || "",
-        s.transportMain || "",
-        s.distanceKm ?? "",
-        s.flightsPerYear ?? "",
-        s.totalCo2Kg ?? "",
-      ]
-        .map((x) => `"${String(x).replaceAll('"', '""')}"`)
-        .join(",")
+app.get(
+  "/admin/export.csv",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (req, res) => {
+    const surveys = await prisma.survey.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { email: true, name: true, role: true } } },
+    });
+
+    const header = [
+      "id",
+      "createdAt",
+      "userEmail",
+      "userName",
+      "userRole",
+      "transportMain",
+      "distanceKm",
+      "flightsPerYear",
+      "totalCo2Kg",
+    ];
+
+    const lines = [header.join(",")];
+    surveys.forEach((s) => {
+      lines.push(
+        [
+          s.id,
+          s.createdAt.toISOString(),
+          s.user?.email || "",
+          s.user?.name || "",
+          s.user?.role || "",
+          s.transportMain || "",
+          s.distanceKm ?? "",
+          s.flightsPerYear ?? "",
+          s.totalCo2Kg ?? "",
+        ]
+          .map((x) => `"${String(x).replaceAll('"', '""')}"`)
+          .join(","),
+      );
+    });
+
+    fireAudit({
+      actorUserId: req.authUser.id,
+      action: "EXPORT_CSV",
+      targetType: "Survey",
+      ipAddress: req.ip,
+    });
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="surveys_${Date.now()}.csv"`,
     );
-  });
+    return res.send(lines.join("\n"));
+  },
+);
 
-  fireAudit({
-    actorUserId: req.authUser.id,
-    action: "EXPORT_CSV",
-    targetType: "Survey",
-    ipAddress: req.ip,
-  });
+app.get(
+  "/admin/export.xlsx",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (req, res) => {
+    const surveys = await prisma.survey.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { email: true, name: true, role: true } } },
+    });
 
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", `attachment; filename="surveys_${Date.now()}.csv"`);
-  return res.send(lines.join("\n"));
-});
+    const rows = surveys.map((s) => ({
+      id: s.id,
+      createdAt: s.createdAt,
+      userEmail: s.user?.email || "",
+      userName: s.user?.name || "",
+      userRole: s.user?.role || "",
+      transportMain: s.transportMain,
+      distanceKm: s.distanceKm,
+      flightsPerYear: s.flightsPerYear,
+      totalCo2Kg: s.totalCo2Kg,
+    }));
 
-app.get("/admin/export.xlsx", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (req, res) => {
-  const surveys = await prisma.survey.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { user: { select: { email: true, name: true, role: true } } },
-  });
+    const wb = xlsx.utils.book_new();
+    const ws = xlsx.utils.json_to_sheet(rows);
+    xlsx.utils.book_append_sheet(wb, ws, "Surveys");
+    const buf = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
 
-  const rows = surveys.map((s) => ({
-    id: s.id,
-    createdAt: s.createdAt,
-    userEmail: s.user?.email || "",
-    userName: s.user?.name || "",
-    userRole: s.user?.role || "",
-    transportMain: s.transportMain,
-    distanceKm: s.distanceKm,
-    flightsPerYear: s.flightsPerYear,
-    totalCo2Kg: s.totalCo2Kg,
-  }));
+    fireAudit({
+      actorUserId: req.authUser.id,
+      action: "EXPORT_XLSX",
+      targetType: "Survey",
+      ipAddress: req.ip,
+    });
 
-  const wb = xlsx.utils.book_new();
-  const ws = xlsx.utils.json_to_sheet(rows);
-  xlsx.utils.book_append_sheet(wb, ws, "Surveys");
-  const buf = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="surveys_${Date.now()}.xlsx"`,
+    );
+    return res.send(buf);
+  },
+);
 
-  fireAudit({
-    actorUserId: req.authUser.id,
-    action: "EXPORT_XLSX",
-    targetType: "Survey",
-    ipAddress: req.ip,
-  });
+app.get(
+  "/admin/export.pdf",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (req, res) => {
+    const surveys = await prisma.survey.findMany({
+      take: 300,
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { email: true, name: true, role: true } } },
+    });
 
-  res.setHeader(
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  );
-  res.setHeader("Content-Disposition", `attachment; filename="surveys_${Date.now()}.xlsx"`);
-  return res.send(buf);
-});
+    fireAudit({
+      actorUserId: req.authUser.id,
+      action: "EXPORT_PDF",
+      targetType: "Survey",
+      ipAddress: req.ip,
+    });
 
-app.get("/admin/export.pdf", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (req, res) => {
-  const surveys = await prisma.survey.findMany({
-    take: 300,
-    orderBy: { createdAt: "desc" },
-    include: { user: { select: { email: true, name: true, role: true } } },
-  });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="surveys_${Date.now()}.pdf"`,
+    );
 
-  fireAudit({
-    actorUserId: req.authUser.id,
-    action: "EXPORT_PDF",
-    targetType: "Survey",
-    ipAddress: req.ip,
-  });
+    const doc = new PDFDocument({ size: "A4", margin: 40 });
+    doc.pipe(res);
+    doc.fontSize(18).text("EVN CO2 Export", { align: "left" });
+    doc.moveDown(0.4);
+    doc.fontSize(10).text(`Generated: ${new Date().toLocaleString("de-AT")}`);
+    doc.moveDown(0.8);
 
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename="surveys_${Date.now()}.pdf"`);
+    surveys.forEach((s, idx) => {
+      const line = `${idx + 1}. #${s.id} | ${s.user?.email || "-"} | ${s.transportMain || "-"} | CO2: ${Number(
+        s.totalCo2Kg || 0,
+      ).toFixed(1)} kg`;
+      doc.fontSize(9).text(line, { lineGap: 2 });
+      if (doc.y > 760) doc.addPage();
+    });
 
-  const doc = new PDFDocument({ size: "A4", margin: 40 });
-  doc.pipe(res);
-  doc.fontSize(18).text("EVN CO2 Export", { align: "left" });
-  doc.moveDown(0.4);
-  doc.fontSize(10).text(`Generated: ${new Date().toLocaleString("de-AT")}`);
-  doc.moveDown(0.8);
-
-  surveys.forEach((s, idx) => {
-    const line = `${idx + 1}. #${s.id} | ${s.user?.email || "-"} | ${s.transportMain || "-"} | CO2: ${Number(
-      s.totalCo2Kg || 0
-    ).toFixed(1)} kg`;
-    doc.fontSize(9).text(line, { lineGap: 2 });
-    if (doc.y > 760) doc.addPage();
-  });
-
-  doc.end();
-});
+    doc.end();
+  },
+);
 
 app.post(
   "/admin/upload",
@@ -810,48 +945,144 @@ app.post(
     });
 
     return res.json(saved);
-  }
+  },
 );
 
-app.get("/admin/uploads", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (_req, res) => {
-  const items = await prisma.uploadedFile.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { uploadedBy: { select: { id: true, email: true, role: true } } },
-  });
-  return res.json(items);
+app.get(
+  "/admin/uploads",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (_req, res) => {
+    const items = await prisma.uploadedFile.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        uploadedBy: { select: { id: true, email: true, role: true } },
+      },
+    });
+    return res.json(items);
+  },
+);
+
+app.get(
+  "/admin/partials/users",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (_req, res) => {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        _count: { select: { surveys: true } },
+      },
+    });
+    return res.send(adminUsersRowsHtml(users));
+  },
+);
+
+app.get(
+  "/admin/partials/audit-logs",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (_req, res) => {
+    const logs = await prisma.auditLog.findMany({
+      take: 200,
+      orderBy: { createdAt: "desc" },
+      include: { actor: { select: { email: true } } },
+    });
+    return res.send(auditRowsHtml(logs));
+  },
+);
+
+app.get(
+  "/admin/partials/uploads",
+  auth,
+  requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  async (_req, res) => {
+    const items = await prisma.uploadedFile.findMany({
+      take: 200,
+      orderBy: { createdAt: "desc" },
+      include: { uploadedBy: { select: { email: true } } },
+    });
+    return res.send(uploadRowsHtml(items));
+  },
+);
+
+// Public endpoint to fetch emission factors (imported from Excel)
+app.get("/emission-factors", async (_req, res) => {
+  try {
+    const list = await prisma.emissionFactor.findMany({
+      orderBy: { createdAt: "asc" },
+    });
+    return res.json(list);
+  } catch (err) {
+    console.error("Failed to fetch emission factors:", err);
+    return res.status(500).json({ error: "failed" });
+  }
 });
 
-app.get("/admin/partials/users", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (_req, res) => {
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      role: true,
-      createdAt: true,
-      _count: { select: { surveys: true } },
-    },
-  });
-  return res.send(adminUsersRowsHtml(users));
-});
+// Public pre-aggregated data for frontend charts
+app.get("/public/aggregations", async (_req, res) => {
+  try {
+    const surveys = await prisma.survey.findMany({
+      select: {
+        transportMain: true,
+        totalCo2Kg: true,
+        createdAt: true,
+        flightsPerYear: true,
+      },
+    });
 
-app.get("/admin/partials/audit-logs", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (_req, res) => {
-  const logs = await prisma.auditLog.findMany({
-    take: 200,
-    orderBy: { createdAt: "desc" },
-    include: { actor: { select: { email: true } } },
-  });
-  return res.send(auditRowsHtml(logs));
-});
+    const byTransport = {};
+    const flights = {};
+    let totalCo2 = 0;
 
-app.get("/admin/partials/uploads", auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN), async (_req, res) => {
-  const items = await prisma.uploadedFile.findMany({
-    take: 200,
-    orderBy: { createdAt: "desc" },
-    include: { uploadedBy: { select: { email: true } } },
-  });
-  return res.send(uploadRowsHtml(items));
+    const byMonth = {};
+
+    surveys.forEach((s) => {
+      const t = s.transportMain || "UNKNOWN";
+      byTransport[t] = (byTransport[t] || 0) + 1;
+
+      const f = (() => {
+        const v = s.flightsPerYear ?? -1;
+        if (v <= 0) return "0";
+        if (v <= 2) return "1-2";
+        if (v <= 5) return "2-5";
+        return ">5";
+      })();
+      flights[f] = (flights[f] || 0) + 1;
+
+      totalCo2 += Number(s.totalCo2Kg || 0);
+
+      const d = new Date(s.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      byMonth[key] = byMonth[key] || { sum: 0, count: 0 };
+      byMonth[key].sum += Number(s.totalCo2Kg || 0);
+      byMonth[key].count += 1;
+    });
+
+    const months = Object.keys(byMonth).sort();
+    const avgCo2ByMonth = months.map((m) =>
+      Number((byMonth[m].sum / byMonth[m].count).toFixed(2)),
+    );
+
+    return res.json({
+      count: surveys.length,
+      avgCo2Kg: surveys.length
+        ? Number((totalCo2 / surveys.length).toFixed(2))
+        : 0,
+      byTransport,
+      flights,
+      months,
+      avgCo2ByMonth,
+    });
+  } catch (err) {
+    console.error("Failed to compute aggregations:", err);
+    return res.status(500).json({ error: "failed" });
+  }
 });
 
 ensureInitialAdmin()

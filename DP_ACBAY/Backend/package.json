@@ -11,8 +11,11 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "import:excel": "node scripts/import-excel.js",
+    "import:excel": "node services/import/import-excel.js",
     "dev": "node server.js",
+    "serve:frontend": "node static-server.js",
+    "verify": "node scripts/verify-endpoints.js",
+    "prisma:generate": "prisma generate",
     "build:css": "tailwindcss -c ../Frontend/tailwind.config.cjs -i ../Frontend/tailwind.input.css -o ../Frontend/style.css --minify"
   },
   "devDependencies": {
