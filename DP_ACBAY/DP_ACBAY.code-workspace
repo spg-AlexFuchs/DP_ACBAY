@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../ACBAY STATUS"
+		}
+	],
+	"settings": {
+		"prisma.pinToPrisma6": true,
+		"liveServer.settings.multiRootWorkspaceName": "DP_ACBAY"
+	}
+}
