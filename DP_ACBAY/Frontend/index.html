@@ -566,6 +566,22 @@
         loadChartData();
       });
 
+      // When register is successful, switch to login form
+      registerForm.addEventListener("htmx:afterSwap", (event) => {
+        const feedback = document.getElementById("authFeedback");
+        if (feedback && feedback.textContent.includes("erfolgreich")) {
+          console.log("✅ Registration successful, switching to login form");
+          setTimeout(() => {
+            loginForm.classList.remove("hidden");
+            registerForm.classList.add("hidden");
+            toggleAuth.textContent = "Noch kein Konto?";
+            // Clear the form
+            registerForm.reset();
+            feedback.textContent = "";
+          }, 500);
+        }
+      });
+
       document.body.addEventListener("authChanged", (event) => {
         const token = event.detail && event.detail.token;
         const role = event.detail && event.detail.role;
@@ -578,13 +594,56 @@
       });
 
       document.body.addEventListener("htmx:configRequest", (event) => {
+        console.log("🟡 HTMX Request Config:", {
+          verb: event.detail.verb,
+          path: event.detail.path,
+          target: event.target.id
+        });
         const token = getToken();
         if (token) {
           event.detail.headers.Authorization = `Bearer ${token}`;
         }
       });
 
+      document.body.addEventListener("htmx:beforeRequest", (event) => {
+        console.log("🔵 HTMX Before Request:", event.detail);
+      });
+
+      document.body.addEventListener("htmx:afterRequest", (event) => {
+        console.log("🟢 HTMX After Request:", {
+          status: event.detail.xhr.status,
+          target: event.target.id
+        });
+      });
+
+      document.body.addEventListener("htmx:responseError", (event) => {
+        console.error("❌ HTMX Response Error:", {
+          status: event.detail.xhr.status,
+          target: event.target.id
+        });
+      });
+
       document.body.addEventListener("htmx:afterSwap", (event) => {
+        // Check for authChanged trigger
+        if (event.detail.xhr && event.detail.xhr.status === 200) {
+          const triggerHeader = event.detail.xhr.getResponseHeader("HX-Trigger");
+          if (triggerHeader) {
+            try {
+              const trigger = JSON.parse(triggerHeader);
+              if (trigger.authChanged) {
+                console.log("✅ Auth changed detected:", trigger.authChanged);
+                setToken(trigger.authChanged.token);
+                setRole(trigger.authChanged.role);
+                applyMode();
+                htmx.trigger("body", "refreshDashboard");
+                loadChartData();
+              }
+            } catch (e) {
+              console.warn("Failed to parse HX-Trigger:", e);
+            }
+          }
+        }
+        
         if (event.target.id === "surveyRows" || event.target.id === "summaryGrid") {
           loadChartData();
         }

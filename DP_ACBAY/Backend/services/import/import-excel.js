@@ -459,19 +459,29 @@ async function ensureDefaultUser() {
   return user.id;
 }
 
-async function main() {
-  const userId = await ensureDefaultUser();
-  const factors = await importEmissionFactors();
-  if (userId && factors.length) {
-    await importSurvey(factors, userId);
-  }
+// Main entry point when run directly
+if (require.main === module) {
+  (async () => {
+    try {
+      console.log("Starte Import von Emissionsfaktoren...");
+      const factors = await importEmissionFactors();
+      console.log(`✅ ${factors.length} Emissionsfaktoren importiert`);
+
+      console.log("Starte Import von Umfrageantworten...");
+      const userId = await ensureDefaultUser();
+      await importSurvey(factors, userId);
+      console.log("✅ Umfrageantworten importiert");
+
+      process.exit(0);
+    } catch (err) {
+      console.error("❌ Fehler beim Import:", err);
+      process.exit(1);
+    }
+  })();
 }
 
-main()
-  .catch((error) => {
-    console.error("Import fehlgeschlagen:", error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+module.exports = {
+  importEmissionFactors,
+  importSurvey,
+  ensureDefaultUser,
+};
