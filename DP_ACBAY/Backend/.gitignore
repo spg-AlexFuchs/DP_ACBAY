@@ -1,7 +1,7 @@
 node_modules
 # Keep environment variables out of version control
 .env
-dev.db
+getsmartDB.db
 generated
 
 /src/generated/prisma
@@ -12,3 +12,5 @@ generated
 
 /generated/prisma
 uploads/
+
+
