@@ -5,62 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Datenschutz - CO2 Dashboard</title>
   <link rel="stylesheet" href="style.css">
+   <link rel="stylesheet" href="evn-colors.css">
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-900 flex flex-col has-fixed-footer">
-  <!-- Top Info Bar -->
-  <div class="border-b border-slate-200 bg-white px-6 py-4">
-    <div class="mx-auto max-w-6xl flex items-center justify-between">
-      <div class="flex items-center gap-8">
-        <div class="flex items-center gap-2">
-          <span class="text-2xl font-bold text-red-600">EVN</span>
-          <span class="text-sm text-slate-600">Energie. Wasser. Leben.</span>
-        </div>
-      </div>
-      <div class="flex items-center gap-6 text-right">
-        <div class="flex items-center gap-2">
-          <svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-          <div class="text-sm">
-            <div class="font-semibold text-slate-900">0800 800 100</div>
-            <div class="text-xs text-slate-600">Mo–Do 7–19 Uhr, Fr 7–17 Uhr</div>
+<body class="content-page-body has-fixed-footer">
+
+  <header class="rounded-2xl bg-red-700 p-8 text-white shadow-xl">
+      <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div class="inline-flex items-center rounded-full border border-red-300/40 bg-red-500/20 px-3 py-1 text-xs font-semibold tracking-wide">
+            CO2 Dashboard
           </div>
+          <h1 class="mt-4 text-3xl font-bold md:text-4xl">Datenschutz</h1>
+          <p class="mt-2 max-w-3xl text-sm text-slate-200 md:text-base">
+            Datenschutzerklärung
+          </p>
         </div>
+        <a href="index.html" class="rounded-lg bg-white/20 px-4 py-3 hover:bg-white/30 transition font-semibold whitespace-nowrap">← Zurück</a>
       </div>
-    </div>
-  </div>
-  <header class="bg-gradient-to-r from-red-600 to-red-700 px-6 py-6 text-white shadow-lg">
-    <div class="mx-auto max-w-6xl">
-      <div class="mb-4 flex items-center justify-between">
-        <a href="index.html" class="flex items-center gap-2 text-2xl font-bold hover:text-red-100 transition">
-          <span>EVN</span>
-          <span class="text-sm text-red-100">CO₂ Dashboard</span>
-        </a>
-        <a href="index.html" class="rounded-lg bg-white/20 px-4 py-2 hover:bg-white/30 transition font-semibold">← Zurück zur Startseite</a>
-      </div>
-      <h1 class="text-3xl font-bold">Datenschutz</h1>
-      <p class="mt-2 text-red-100">Datenschutzerklärung</p>
-    </div>
-  </header>
+    </header>
 
-  <main class="flex-1 mx-auto max-w-4xl px-6 py-12 w-full">
-    <div class="rounded-lg bg-white p-8 shadow">
-      <div class="mb-8 flex items-center gap-4">
-        <div class="rounded-full bg-red-100 px-4 py-2">
-          <span class="text-xs font-semibold text-red-700">CO₂ DASHBOARD</span>
-        </div>
-      </div>
-      <h1 class="text-center mb-6 text-3xl font-bold text-slate-900">Datenschutz</h1>
-      <p class="text-center mb-8 text-slate-600">Datenschutzerklärung</p>
+  <main class="content-page-main">
 
-      <section class="mb-8">
-        <h3 class="mb-4 text-lg font-semibold text-red-600">1. Datenschutz auf einen Blick</h3>
-        <p class="rounded-lg bg-slate-50 p-6 text-slate-700">
+      <section class="content-section">
+        <h3 class="content-heading text-lg font-semibold text-slate-900">1. Datenschutz auf einen Blick</h3>
+        <p class="content-card">
           Die Betreiber dieser Seite nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend der gesetzlichen Datenschutzvorschriften.
         </p>
       </section>
 
-      <section class="mb-8">
-        <h3 class="mb-4 text-lg font-semibold text-red-600">2. Verantwortliche Stelle</h3>
-        <p class="rounded-lg bg-slate-50 p-6 text-slate-700">
+      <section class="content-section">
+        <h3 class="content-heading text-lg font-semibold text-slate-900">2. Verantwortliche Stelle</h3>
+        <p class="content-card">
           EVN Energieversorgung Niederösterreich<br>
           Stromstraße 1<br>
           3100 St. Pölten<br>
@@ -69,11 +44,11 @@
         </p>
       </section>
 
-      <section class="mb-8">
-        <h3 class="mb-4 text-lg font-semibold text-red-600">3. Erfassung von Daten</h3>
-        <div class="rounded-lg bg-slate-50 p-6">
-          <p class="mb-3 text-slate-700">Bei der Nutzung dieser Website werden folgende Daten erfasst:</p>
-          <ul class="list-inside list-disc space-y-2 text-slate-700">
+      <section class="content-section">
+        <h3 class="content-heading text-lg font-semibold text-slate-900">3. Erfassung von Daten</h3>
+        <div class="content-card">
+          <p class="mb-3 text-slate-900">Bei der Nutzung dieser Website werden folgende Daten erfasst:</p>
+          <ul class="list-inside list-disc space-y-2 text-slate-900">
             <li>IP-Adresse des Benutzers</li>
             <li>Datum und Uhrzeit des Zugriffs</li>
             <li>Besuchte Seiten und deren Inhalte</li>
@@ -83,18 +58,18 @@
         </div>
       </section>
 
-      <section class="mb-8">
-        <h3 class="mb-4 text-lg font-semibold text-red-600">4. Authentifizierung und Benutzerkonten</h3>
-        <p class="rounded-lg bg-slate-50 p-6 text-slate-700">
+      <section class="content-section">
+        <h3 class="content-heading text-lg font-semibold text-slate-900">4. Authentifizierung und Benutzerkonten</h3>
+        <p class="content-card">
           Für die Nutzung bestimmter Funktionen können Sie ein Benutzerkonto erstellen. Die von Ihnen bereitgestellten Daten werden ausschließlich zur Verwaltung Ihres Kontos und zur Bereitstellung der angeforderten Dienste verwendet.
         </p>
       </section>
 
-      <section class="mb-8">
-        <h3 class="mb-4 text-lg font-semibold text-red-600">5. Ihre Rechte</h3>
-        <div class="rounded-lg bg-slate-50 p-6">
-          <p class="mb-3 text-slate-700">Sie haben folgende Rechte bezüglich Ihrer Daten:</p>
-          <ul class="list-inside list-disc space-y-2 text-slate-700">
+      <section class="content-section">
+        <h3 class="content-heading text-lg font-semibold text-slate-900">5. Ihre Rechte</h3>
+        <div class="content-card">
+          <p class="mb-3 text-slate-900">Sie haben folgende Rechte bezüglich Ihrer Daten:</p>
+          <ul class="list-inside list-disc space-y-2 text-slate-900">
             <li>Recht auf Auskunft über gespeicherte personenbezogene Daten</li>
             <li>Recht auf Berichtigung fehlerhafter Daten</li>
             <li>Recht auf Löschung Ihrer Daten</li>
@@ -103,9 +78,9 @@
         </div>
       </section>
 
-      <section class="rounded-lg bg-red-50 p-6">
-        <h3 class="mb-4 text-lg font-semibold text-red-600">6. Kontakt</h3>
-        <p class="text-slate-700">
+      <section class="content-section content-card">
+        <h3 class="content-heading text-lg font-semibold text-slate-900">6. Kontakt</h3>
+        <p class="text-slate-900">
           Bei Fragen zum Datenschutz kontaktieren Sie bitte unseren Datenschutzbeauftragten:<br>
           E-Mail: <a href="mailto:datenschutz@evn.at" class="font-semibold text-red-600 hover:text-red-700">datenschutz@evn.at</a>
         </p>

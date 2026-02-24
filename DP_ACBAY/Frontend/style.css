@@ -13,6 +13,12 @@
 .site-footer .flex{align-items:center;justify-content:space-between}
 
 /* Reusable legal/content page spacing */
-.content-section{margin-bottom:2rem}
-.content-heading{margin-bottom:1rem}
-.content-card{border:1px solid rgb(203 213 225);border-radius:.5rem;background:#fff;padding:1.5rem;color:rgb(15 23 42)}
+.content-section{margin-bottom:2rem !important}
+.content-heading{margin-bottom:1rem !important;color:rgb(15 23 42) !important}
+.content-card{border:1px solid rgb(203 213 225) !important;border-radius:.5rem !important;background:#fff !important;padding:1.5rem !important;color:rgb(15 23 42) !important}
+
+/* Shared page layout for all content pages */
+.content-page-body{min-height:100vh;display:flex;flex-direction:column;background:#fff !important;color:rgb(15 23 42)}
+.content-page-body > header{margin:1.5rem 1.5rem 0 1.5rem !important}
+.content-page-main{flex:1;width:100%;max-width:none;margin:1.5rem 0 0 0;padding:0 1.5rem 2.5rem}
+@media (min-width:768px){.content-page-body > header{margin:2.5rem 2.5rem 0 2.5rem !important}.content-page-main{padding:0 2.5rem 3rem}}
