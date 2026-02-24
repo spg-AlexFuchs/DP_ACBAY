@@ -73,6 +73,14 @@ function findFactor(factors, label) {
   return factors.find((x) => x.label === label) || null;
 }
 
+function findFirstFactor(factors, labels) {
+  for (const label of labels) {
+    const factor = findFactor(factors, label);
+    if (factor) return factor;
+  }
+  return null;
+}
+
 function findColumnName(headers, aliases) {
   const normalizedHeaders = headers.map((h) => ({ raw: h, norm: normalizeText(h) }));
   for (const alias of aliases) {
@@ -174,6 +182,28 @@ const WARM_WATER_MAP = new Map([
   ["solar", "Solarthermie"],
 ]);
 
+const ELECTRICITY_TYPE_MAP = new Map([
+  ["okostrom", "Ökostrom"],
+  ["ja", "Ökostrom"],
+  ["yes", "Ökostrom"],
+  ["strommix", "Strom Ö-Mix"],
+  ["strom o-mix", "Strom Ö-Mix"],
+  ["strom o mix", "Strom Ö-Mix"],
+  ["nein", "Strom Ö-Mix"],
+  ["no", "Strom Ö-Mix"],
+]);
+
+const HEATING_ENERGY_LABELS = [
+  "Energiebedarf Heizen",
+  "Energieverbrauch Heizen",
+  "Energieverbauch durschnitt österreich/person heizen",
+];
+
+const ELECTRICITY_ENERGY_LABELS = [
+  "Energiebedarf Strom",
+  "Stromverbrauch österreich/person",
+];
+
 function parseOfficeDays(text) {
   const norm = normalizeEnum(text);
   const firstDigit = norm.match(/\d+/);
@@ -246,7 +276,27 @@ function computeSurveyTotal(input, factors) {
     }
   }
 
-  return commuteKg + flightKg + warmWaterKg;
+  let heatingKg = 0;
+  const heatingType = pickByIncludes(input.heatingTypeText, HEATING_MAP);
+  if (heatingType) {
+    const energy = findFirstFactor(factors, HEATING_ENERGY_LABELS);
+    const factor = findFactor(factors, heatingType);
+    if (energy && factor) {
+      heatingKg = ((energy.valueNumber || 0) * (factor.valueNumber || 0)) / 1000;
+    }
+  }
+
+  let electricityKg = 0;
+  const electricityType = pickByIncludes(input.usesGreenElectricityText, ELECTRICITY_TYPE_MAP);
+  if (electricityType) {
+    const energy = findFirstFactor(factors, ELECTRICITY_ENERGY_LABELS);
+    const factor = findFactor(factors, electricityType);
+    if (energy && factor) {
+      electricityKg = ((energy.valueNumber || 0) * (factor.valueNumber || 0)) / 1000;
+    }
+  }
+
+  return commuteKg + flightKg + warmWaterKg + heatingKg + electricityKg;
 }
 
 function getSheetRows(workbook, sheetName) {
@@ -410,7 +460,9 @@ async function importSurvey(factors, userId) {
         carTypeText,
         flightsPerYearText,
         flightDistanceText,
+        heatingTypeText,
         warmWaterTypeText,
+        usesGreenElectricityText,
       },
       factors
     );

@@ -104,6 +104,28 @@ const WARM_WATER_MAP = new Map([
   ["solar", "Solarthermie"],
 ]);
 
+const ELECTRICITY_TYPE_MAP = new Map([
+  ["okostrom", "Ã–kostrom"],
+  ["ja", "Ã–kostrom"],
+  ["yes", "Ã–kostrom"],
+  ["strommix", "Strom Ã–-Mix"],
+  ["strom o-mix", "Strom Ã–-Mix"],
+  ["strom o mix", "Strom Ã–-Mix"],
+  ["nein", "Strom Ã–-Mix"],
+  ["no", "Strom Ã–-Mix"],
+]);
+
+const HEATING_ENERGY_LABELS = [
+  "Energiebedarf Heizen",
+  "Energieverbrauch Heizen",
+  "Energieverbauch durschnitt Ã¶sterreich/person heizen",
+];
+
+const ELECTRICITY_ENERGY_LABELS = [
+  "Energiebedarf Strom",
+  "Stromverbrauch Ã¶sterreich/person",
+];
+
 /**
  * Parse office days from text
  */
@@ -157,6 +179,14 @@ function parseFlightsPerYear(text) {
 function findFactor(factors, label) {
   if (!label) return null;
   return factors.find((x) => x.label === label) || null;
+}
+
+function findFirstFactor(factors, labels) {
+  for (const label of labels) {
+    const factor = findFactor(factors, label);
+    if (factor) return factor;
+  }
+  return null;
 }
 
 /**
@@ -221,7 +251,27 @@ function computeSurveyTotal(input, factors) {
     }
   }
 
-  return commuteKg + flightKg + warmWaterKg;
+  let heatingKg = 0;
+  const heatingType = pickByIncludes(input.heatingTypeText, HEATING_MAP);
+  if (heatingType) {
+    const energy = findFirstFactor(factors, HEATING_ENERGY_LABELS);
+    const factor = findFactor(factors, heatingType);
+    if (energy && factor) {
+      heatingKg = ((energy.valueNumber || 0) * (factor.valueNumber || 0)) / 1000;
+    }
+  }
+
+  let electricityKg = 0;
+  const electricityType = pickByIncludes(input.usesGreenElectricityText, ELECTRICITY_TYPE_MAP);
+  if (electricityType) {
+    const energy = findFirstFactor(factors, ELECTRICITY_ENERGY_LABELS);
+    const factor = findFactor(factors, electricityType);
+    if (energy && factor) {
+      electricityKg = ((energy.valueNumber || 0) * (factor.valueNumber || 0)) / 1000;
+    }
+  }
+
+  return commuteKg + flightKg + warmWaterKg + heatingKg + electricityKg;
 }
 
 module.exports = {
@@ -230,6 +280,7 @@ module.exports = {
   parseAltFreq,
   parseFlightsPerYear,
   findFactor,
+  findFirstFactor,
   pickByIncludes,
   toNumber,
   computeSurveyTotal,
