@@ -17,6 +17,9 @@ async function getPublicSurveys(req, res) {
         transportMain: true,
         distanceKm: true,
         flightsPerYear: true,
+        heatingType: true,
+        warmWaterType: true,
+        usesGreenElectricity: true,
         totalCo2Kg: true,
       },
     });
@@ -53,6 +56,9 @@ async function getUserSurveys(req, res) {
         transportMain: true,
         distanceKm: true,
         flightsPerYear: true,
+        heatingType: true,
+        warmWaterType: true,
+        usesGreenElectricity: true,
         totalCo2Kg: true,
         user: { select: { email: true, name: true } },
       },
@@ -106,11 +112,15 @@ async function getPublicAggregations(req, res) {
         totalCo2Kg: true,
         createdAt: true,
         flightsPerYear: true,
+        heatingType: true,
+        usesGreenElectricity: true,
       },
     });
 
     const byTransport = {};
     const flights = {};
+    const byHeating = {};
+    const byElectricity = {};
     let totalCo2 = 0;
     const byMonth = {};
 
@@ -126,6 +136,12 @@ async function getPublicAggregations(req, res) {
         return ">5";
       })();
       flights[f] = (flights[f] || 0) + 1;
+
+      const heating = s.heatingType || "UNKNOWN";
+      byHeating[heating] = (byHeating[heating] || 0) + 1;
+
+      const electricity = s.usesGreenElectricity || "UNKNOWN";
+      byElectricity[electricity] = (byElectricity[electricity] || 0) + 1;
 
       totalCo2 += Number(s.totalCo2Kg || 0);
 
@@ -151,6 +167,8 @@ async function getPublicAggregations(req, res) {
         : 0,
       byTransport,
       flights,
+      byHeating,
+      byElectricity,
       months,
       avgCo2ByMonth,
     });
