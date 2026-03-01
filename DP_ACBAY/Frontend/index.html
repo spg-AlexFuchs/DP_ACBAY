@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EVN AG | HTMX CO2 Dashboard</title>
+    <title>EVN AG | CO2 Dashboard</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="evn-colors.css" />
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
@@ -631,10 +631,18 @@
             try {
               const trigger = JSON.parse(triggerHeader);
               if (trigger.authChanged) {
-                console.log("✅ Auth changed detected:", trigger.authChanged);
-                setToken(trigger.authChanged.token);
-                setRole(trigger.authChanged.role);
+                const token = trigger.authChanged.token;
+                const role = trigger.authChanged.role;
+
+                setToken(token);
+                setRole(role);
                 applyMode();
+
+                if (role === "ADMIN" || role === "SUPER_ADMIN") {
+                  window.location.href = "admin.html";
+                  return;
+                }
+
                 htmx.trigger("body", "refreshDashboard");
                 loadChartData();
               }

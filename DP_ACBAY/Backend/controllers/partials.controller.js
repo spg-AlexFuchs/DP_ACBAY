@@ -196,7 +196,7 @@ async function getPrivateSurveys(req, res) {
       .map(
         (s) => `
       <tr class="border-b border-slate-200 hover:bg-purple-50">
-        <td class="px-3 py-2">${s.id.substring(0, 8)}</td>
+        <td class="px-3 py-2">${String(s.id).substring(0, 8)}</td>
         <td class="px-3 py-2">—</td>
         <td class="px-3 py-2">${s.officeDaysPerWeek || "—"}</td>
         <td class="px-3 py-2">${s.distanceKm || "—"}</td>
