@@ -105,26 +105,61 @@ const WARM_WATER_MAP = new Map([
 ]);
 
 const ELECTRICITY_TYPE_MAP = new Map([
-  ["okostrom", "Ã–kostrom"],
-  ["ja", "Ã–kostrom"],
-  ["yes", "Ã–kostrom"],
-  ["strommix", "Strom Ã–-Mix"],
-  ["strom o-mix", "Strom Ã–-Mix"],
-  ["strom o mix", "Strom Ã–-Mix"],
-  ["nein", "Strom Ã–-Mix"],
-  ["no", "Strom Ã–-Mix"],
+  ["okostrom", "Ökostrom"],
+  ["ja", "Ökostrom"],
+  ["yes", "Ökostrom"],
+  ["strommix", "Strom Ö-Mix"],
+  ["strom o-mix", "Strom Ö-Mix"],
+  ["strom o mix", "Strom Ö-Mix"],
+  ["nein", "Strom Ö-Mix"],
+  ["no", "Strom Ö-Mix"],
 ]);
 
 const HEATING_ENERGY_LABELS = [
   "Energiebedarf Heizen",
   "Energieverbrauch Heizen",
-  "Energieverbauch durschnitt Ã¶sterreich/person heizen",
+  "Energieverbauch durschnitt österreich/person heizen",
 ];
 
 const ELECTRICITY_ENERGY_LABELS = [
   "Energiebedarf Strom",
-  "Stromverbrauch Ã¶sterreich/person",
+  "Stromverbrauch österreich/person",
 ];
+
+const CONSUMPTION_BASE_LABELS = [
+  "Ernährung",
+  "Konsumgüter",
+  "Alltagsmobilität (ohne Pendeln)",
+];
+
+const CONSUMPTION_CLOTHING_MAP = new Map([
+  ["immer", "Nachhaltige Kleidung – immer"],
+  ["manchmal", "Nachhaltige Kleidung – manchmal"],
+]);
+
+const CONSUMPTION_REGIONAL_MAP = new Map([
+  ["oft", "Regionaler Einkauf – oft"],
+  ["manchmal", "Regionaler Einkauf – manchmal"],
+]);
+
+const CONSUMPTION_ONLINE_MAP = new Map([
+  ["oft", "Verzicht auf Onlinekauf – oft"],
+  ["manchmal", "Verzicht auf Onlinekauf – manchmal"],
+]);
+
+const CONSUMPTION_SHOPPING_TRANSPORT_MAP = new Map([
+  ["ja", "Umweltfreundlicher Transport beim Einkauf – Ja"],
+  ["manchmal", "Umweltfreundlicher Transport beim Einkauf – Manchmal"],
+]);
+
+const CONSUMPTION_APPLIANCES_MAP = new Map([
+  ["ja, alle", "Energiesparende Geräte – alle (Herstellung)"],
+  ["ja alle", "Energiesparende Geräte – alle (Herstellung)"],
+]);
+
+const CONSUMPTION_SMART_DEVICES_MAP = new Map([
+  ["ja", "Smarte Geräte – Ja (Herstellung)"],
+]);
 
 /**
  * Parse office days from text
@@ -173,6 +208,27 @@ function parseFlightsPerYear(text) {
   return num === null ? null : Math.round(num);
 }
 
+function parseFireworkAdjustmentLabel(text) {
+  const norm = normalizeEnum(text);
+  if (!norm || norm.includes("nie")) return null;
+  if (norm.includes("1/jahr") || norm.includes("1x/jahr") || norm.includes("1 mal")) {
+    return "Feuerwerk 1/Jahr";
+  }
+
+  const digitMatch = norm.match(/\d+/);
+  if (digitMatch) {
+    const n = Number(digitMatch[0]);
+    if (Number.isFinite(n)) {
+      if (n > 1) return "Feuerwerk >1/Jahr";
+      if (n === 1) return "Feuerwerk 1/Jahr";
+    }
+  }
+
+  if (norm.includes("mehrmals") || norm.includes("oft")) return "Feuerwerk >1/Jahr";
+  if (norm.includes("selten") || norm.includes("manchmal")) return "Feuerwerk 1/Jahr";
+  return null;
+}
+
 /**
  * Find factor from list by label
  */
@@ -209,6 +265,42 @@ function toNumber(value) {
   const text = String(value).replace(",", ".").trim();
   const parsed = Number(text);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function factorValueByLabel(factors, label) {
+  return findFactor(factors, label)?.valueNumber || 0;
+}
+
+function computeConsumptionKg(input, factors) {
+  const baseTons = CONSUMPTION_BASE_LABELS.reduce(
+    (sum, label) => sum + factorValueByLabel(factors, label),
+    0
+  );
+
+  const clothingLabel = pickByIncludes(input.sustainableClothingText, CONSUMPTION_CLOTHING_MAP);
+  const regionalLabel = pickByIncludes(input.regionalProductsText, CONSUMPTION_REGIONAL_MAP);
+  const onlineLabel = pickByIncludes(input.avoidsOnlineShoppingText, CONSUMPTION_ONLINE_MAP);
+  const shoppingTransportLabel = pickByIncludes(
+    input.shoppingTransportEcoChoiceText,
+    CONSUMPTION_SHOPPING_TRANSPORT_MAP
+  );
+  const appliancesLabel = pickByIncludes(
+    input.usesEnergyEfficientAppliancesText,
+    CONSUMPTION_APPLIANCES_MAP
+  );
+  const smartDevicesLabel = pickByIncludes(input.usesSmartDevicesText, CONSUMPTION_SMART_DEVICES_MAP);
+  const fireworkLabel = parseFireworkAdjustmentLabel(input.fireworkText);
+
+  const adjustmentTons =
+    factorValueByLabel(factors, clothingLabel) +
+    factorValueByLabel(factors, regionalLabel) +
+    factorValueByLabel(factors, onlineLabel) +
+    factorValueByLabel(factors, shoppingTransportLabel) +
+    factorValueByLabel(factors, appliancesLabel) +
+    factorValueByLabel(factors, smartDevicesLabel) +
+    factorValueByLabel(factors, fireworkLabel);
+
+  return (baseTons + adjustmentTons) * 1000;
 }
 
 /**
@@ -271,7 +363,20 @@ function computeSurveyTotal(input, factors) {
     }
   }
 
-  return commuteKg + flightKg + warmWaterKg + heatingKg + electricityKg;
+  const consumptionKg = computeConsumptionKg(
+    {
+      sustainableClothingText: input.sustainableClothingText,
+      regionalProductsText: input.regionalProductsText,
+      avoidsOnlineShoppingText: input.avoidsOnlineShoppingText,
+      shoppingTransportEcoChoiceText: input.shoppingTransportEcoChoiceText,
+      usesEnergyEfficientAppliancesText: input.usesEnergyEfficientAppliancesText,
+      usesSmartDevicesText: input.usesSmartDevicesText,
+      fireworkText: input.fireworkText,
+    },
+    factors
+  );
+
+  return commuteKg + flightKg + warmWaterKg + heatingKg + electricityKg + consumptionKg;
 }
 
 module.exports = {
