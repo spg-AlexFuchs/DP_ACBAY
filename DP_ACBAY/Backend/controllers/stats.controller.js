@@ -118,6 +118,7 @@ async function getPublicAggregations(req, res) {
     });
 
     const byTransport = {};
+    const co2ByTransport = {};
     const flights = {};
     const byHeating = {};
     const byElectricity = {};
@@ -127,6 +128,9 @@ async function getPublicAggregations(req, res) {
     surveys.forEach((s) => {
       const t = s.transportMain || "UNKNOWN";
       byTransport[t] = (byTransport[t] || 0) + 1;
+      co2ByTransport[t] = co2ByTransport[t] || { sum: 0, count: 0 };
+      co2ByTransport[t].sum += Number(s.totalCo2Kg || 0);
+      co2ByTransport[t].count += 1;
 
       const f = (() => {
         const v = s.flightsPerYear ?? -1;
@@ -159,6 +163,13 @@ async function getPublicAggregations(req, res) {
     const avgCo2ByMonth = months.map((m) =>
       Number((byMonth[m].sum / byMonth[m].count).toFixed(2))
     );
+    const avgCo2ByTransport = {};
+    Object.keys(co2ByTransport).forEach((key) => {
+      const entry = co2ByTransport[key];
+      avgCo2ByTransport[key] = entry.count
+        ? Number((entry.sum / entry.count).toFixed(2))
+        : 0;
+    });
 
     return res.json({
       count: surveys.length,
@@ -166,6 +177,7 @@ async function getPublicAggregations(req, res) {
         ? Number((totalCo2 / surveys.length).toFixed(2))
         : 0,
       byTransport,
+      avgCo2ByTransport,
       flights,
       byHeating,
       byElectricity,

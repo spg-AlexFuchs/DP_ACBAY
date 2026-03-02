@@ -414,15 +414,15 @@
       }
 
       function renderAggregatedCharts(agg) {
-        // agg: { byTransport: {...}, flights: {...}, months: [...], avgCo2ByMonth: [...] }
+        // agg: { byTransport: {...}, avgCo2ByTransport: {...}, flights: {...} ... }
         const transportLabels = Object.keys(agg.byTransport || {});
         const transportData = transportLabels.map((l) => agg.byTransport[l]);
 
         const flightLabels = Object.keys(agg.flights || {});
         const flightData = flightLabels.map((l) => agg.flights[l]);
 
-        const co2Labels = agg.months || [];
-        const co2Data = agg.avgCo2ByMonth || [];
+        const co2Labels = Object.keys(agg.avgCo2ByTransport || {});
+        const co2Data = co2Labels.map((l) => agg.avgCo2ByTransport[l]);
         const heatingLabels = Object.keys(agg.byHeating || {});
         const heatingData = heatingLabels.map((l) => agg.byHeating[l]);
         const electricityLabels = Object.keys(agg.byElectricity || {});

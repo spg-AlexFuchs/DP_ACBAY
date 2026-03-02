@@ -182,6 +182,7 @@ function parseDistanceKm(text) {
   for (const [k, v] of DISTANCE_MAP.entries()) {
     if (norm.includes(k)) return v;
   }
+  if (norm.includes("uber60") || norm.includes("ueber60") || norm.includes("mehrals60")) return 80;
   return 0;
 }
 
