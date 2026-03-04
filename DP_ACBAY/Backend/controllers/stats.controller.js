@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const { ROLE } = require("../services/auth.services");
+const { buildSurveyAggregations } = require("../services/aggregation.service");
 
 const prisma = new PrismaClient();
 
@@ -116,76 +117,37 @@ async function getPublicAggregations(req, res) {
         usesGreenElectricity: true,
       },
     });
-
-    const byTransport = {};
-    const co2ByTransport = {};
-    const flights = {};
-    const byHeating = {};
-    const byElectricity = {};
-    let totalCo2 = 0;
-    const byMonth = {};
-
-    surveys.forEach((s) => {
-      const t = s.transportMain || "UNKNOWN";
-      byTransport[t] = (byTransport[t] || 0) + 1;
-      co2ByTransport[t] = co2ByTransport[t] || { sum: 0, count: 0 };
-      co2ByTransport[t].sum += Number(s.totalCo2Kg || 0);
-      co2ByTransport[t].count += 1;
-
-      const f = (() => {
-        const v = s.flightsPerYear ?? -1;
-        if (v <= 0) return "0";
-        if (v <= 2) return "1-2";
-        if (v <= 5) return "2-5";
-        return ">5";
-      })();
-      flights[f] = (flights[f] || 0) + 1;
-
-      const heating = s.heatingType || "UNKNOWN";
-      byHeating[heating] = (byHeating[heating] || 0) + 1;
-
-      const electricity = s.usesGreenElectricity || "UNKNOWN";
-      byElectricity[electricity] = (byElectricity[electricity] || 0) + 1;
-
-      totalCo2 += Number(s.totalCo2Kg || 0);
-
-      const d = new Date(s.createdAt);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}`;
-      byMonth[key] = byMonth[key] || { sum: 0, count: 0 };
-      byMonth[key].sum += Number(s.totalCo2Kg || 0);
-      byMonth[key].count += 1;
-    });
-
-    const months = Object.keys(byMonth).sort();
-    const avgCo2ByMonth = months.map((m) =>
-      Number((byMonth[m].sum / byMonth[m].count).toFixed(2))
-    );
-    const avgCo2ByTransport = {};
-    Object.keys(co2ByTransport).forEach((key) => {
-      const entry = co2ByTransport[key];
-      avgCo2ByTransport[key] = entry.count
-        ? Number((entry.sum / entry.count).toFixed(2))
-        : 0;
-    });
-
-    return res.json({
-      count: surveys.length,
-      avgCo2Kg: surveys.length
-        ? Number((totalCo2 / surveys.length).toFixed(2))
-        : 0,
-      byTransport,
-      avgCo2ByTransport,
-      flights,
-      byHeating,
-      byElectricity,
-      months,
-      avgCo2ByMonth,
-    });
+    return res.json(buildSurveyAggregations(surveys));
   } catch (err) {
     console.error("Failed to compute aggregations:", err);
+    return res.status(500).json({ error: "failed" });
+  }
+}
+
+/**
+ * Get aggregations for authenticated user scope
+ */
+async function getPrivateAggregations(req, res) {
+  try {
+    const where = req.authUser.role === ROLE.EMPLOYEE
+      ? { userId: req.authUser.id }
+      : {};
+
+    const surveys = await prisma.survey.findMany({
+      where,
+      select: {
+        transportMain: true,
+        totalCo2Kg: true,
+        createdAt: true,
+        flightsPerYear: true,
+        heatingType: true,
+        usesGreenElectricity: true,
+      },
+    });
+
+    return res.json(buildSurveyAggregations(surveys));
+  } catch (err) {
+    console.error("Failed to compute private aggregations:", err);
     return res.status(500).json({ error: "failed" });
   }
 }
@@ -232,5 +194,6 @@ module.exports = {
   getMySurveys,
   getEmissionFactors,
   getPublicAggregations,
+  getPrivateAggregations,
   getHrAggregations,
 };

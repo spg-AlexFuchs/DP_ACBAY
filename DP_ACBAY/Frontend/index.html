@@ -31,10 +31,19 @@
         </div>
       </header>
 
+      <div id="topActions" class="mt-4 hidden items-center justify-end gap-3">
+        <a id="adminLink" href="admin.html" class="hidden text-sm font-medium text-red-700 hover:text-red-800">
+          Zum Admin-Panel
+        </a>
+        <button id="logoutBtn" type="button" class="text-sm font-medium text-red-700 hover:text-red-800">
+          Logout
+        </button>
+      </div>
+
       <!-- Main Content -->
       <main class="mt-6 grid gap-6 lg:grid-cols-12">
         <!-- Login Section -->
-        <section class="rounded-2xl bg-white p-5 shadow lg:col-span-4">
+        <section id="authPanel" class="rounded-2xl bg-white p-5 shadow lg:col-span-4">
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold">Login</h2>
             <button id="toggleAuth" type="button" class="text-sm font-medium text-red-700 hover:text-red-800">
@@ -94,6 +103,7 @@
               name="password"
               type="password"
               placeholder="Mind. 6 Zeichen"
+              minlength="6"
               required
               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
             />
@@ -109,17 +119,11 @@
           <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
             <div class="text-xs uppercase tracking-wide text-slate-500">Status</div>
             <div id="sessionText" class="mt-1 text-sm font-medium">Öffentlicher Zugriff aktiv</div>
-            <a id="adminLink" href="admin.html" class="mt-2 hidden text-sm font-medium text-red-700 hover:text-red-800">
-              Zum Admin-Panel
-            </a>
-            <button id="logoutBtn" type="button" class="mt-2 hidden text-sm font-medium text-red-700 hover:text-red-800">
-              Logout
-            </button>
           </div>
         </section>
 
         <!-- Dashboard Section -->
-        <section class="rounded-2xl bg-white p-5 shadow lg:col-span-8">
+        <section id="dashboardSection" class="rounded-2xl bg-white p-5 shadow lg:col-span-8">
           <!-- Summary Grid -->
           <div
             id="summaryGrid"
@@ -261,11 +265,17 @@
       const API_URL = "http://localhost:3000";
       const modeLabel = document.getElementById("modeLabel");
       const sessionText = document.getElementById("sessionText");
+      const topActions = document.getElementById("topActions");
       const logoutBtn = document.getElementById("logoutBtn");
       const adminLink = document.getElementById("adminLink");
       const toggleAuth = document.getElementById("toggleAuth");
       const loginForm = document.getElementById("loginForm");
       const registerForm = document.getElementById("registerForm");
+      const loginEmailInput = loginForm.querySelector('input[name="email"]');
+      const registerEmailInput = registerForm.querySelector('input[name="email"]');
+      const registerPasswordInput = registerForm.querySelector('input[name="password"]');
+      const authPanel = document.getElementById("authPanel");
+      const dashboardSection = document.getElementById("dashboardSection");
       const surveyRows = document.getElementById("surveyRows");
       const summaryGrid = document.getElementById("summaryGrid");
       const hoverInfo = document.getElementById("hoverInfo");
@@ -314,13 +324,39 @@
         return Boolean(getToken());
       }
 
+      function updateAuthFormsVisibility(privateMode, role) {
+        const isAdminLoggedIn = privateMode && isAdminRole(role);
+
+        if (isAdminLoggedIn) {
+          loginForm.classList.add("hidden");
+          registerForm.classList.add("hidden");
+          toggleAuth.classList.add("hidden");
+          document.getElementById("authFeedback").textContent = "";
+          return;
+        }
+
+        toggleAuth.classList.remove("hidden");
+        if (loginForm.classList.contains("hidden") && registerForm.classList.contains("hidden")) {
+          loginForm.classList.remove("hidden");
+          registerForm.classList.add("hidden");
+          toggleAuth.textContent = "Noch kein Konto?";
+        }
+      }
+
       function applyMode() {
         const privateMode = isPrivateMode();
         const role = getRole();
+        const adminLoggedIn = privateMode && isAdminRole(role);
+
         modeLabel.textContent = privateMode ? `Eingeloggt (${role || "?"})` : "Öffentlich";
         sessionText.textContent = privateMode ? "Erweiterte Daten sichtbar" : "Öffentlicher Zugriff aktiv";
-        logoutBtn.classList.toggle("hidden", !privateMode);
+        topActions.classList.toggle("hidden", !privateMode);
+        topActions.classList.toggle("flex", privateMode);
         adminLink.classList.toggle("hidden", !(privateMode && isAdminRole(role)));
+        updateAuthFormsVisibility(privateMode, role);
+
+        authPanel.classList.toggle("hidden", adminLoggedIn);
+        dashboardSection.style.gridColumn = adminLoggedIn ? "1 / -1" : "";
 
         surveyRows.setAttribute(
           "hx-get",
@@ -330,22 +366,6 @@
           "hx-get",
           privateMode ? `${API_URL}/partials/summary/private` : `${API_URL}/partials/summary/public`
         );
-      }
-
-      // ==========================================
-      // Data Functions
-      // ==========================================
-      function normalizeTransport(value) {
-        if (!value) return "Unbekannt";
-        return String(value).replaceAll("_", " ");
-      }
-
-      function flightsBucket(value) {
-        if (value === null || value === undefined) return "Keine Angabe";
-        if (value <= 0) return "0";
-        if (value <= 2) return "1-2";
-        if (value <= 5) return "2-5";
-        return ">5";
       }
 
       // ==========================================
@@ -384,17 +404,11 @@
         if (privateMode) headers.Authorization = `Bearer ${getToken()}`;
 
         try {
-          if (!privateMode) {
-            // public aggregated endpoint (pre-aggregated for charts)
-            const res = await fetch(`${API_URL}/public/aggregations`);
-            if (!res.ok) return;
-            const agg = await res.json();
-            renderAggregatedCharts(agg);
-            return;
-          }
+          const endpoint = privateMode
+            ? `${API_URL}/surveys/aggregations/private`
+            : `${API_URL}/public/aggregations`;
 
-          // private mode: fetch raw surveys and render as before
-          const res = await fetch(`${API_URL}/surveys`, { headers });
+          const res = await fetch(endpoint, { headers });
           if (!res.ok) {
             if (res.status === 401) {
               setToken(null);
@@ -405,8 +419,8 @@
             }
             return;
           }
-          const rows = await res.json();
-          renderCharts(rows);
+          const agg = await res.json();
+          renderAggregatedCharts(agg);
         } catch (err) {
           console.error(err);
           hoverInfo.textContent = "API nicht erreichbar.";
@@ -518,153 +532,6 @@
         });
       }
 
-      function renderCharts(rows) {
-        const transportMap = new Map();
-        const flightsMap = new Map();
-        const co2Map = new Map();
-        const heatingMap = new Map();
-        const electricityMap = new Map();
-
-        rows.forEach((row) => {
-          const transport = normalizeTransport(row.transportMain);
-          transportMap.set(transport, (transportMap.get(transport) || 0) + 1);
-
-          const flightKey = flightsBucket(row.flightsPerYear);
-          flightsMap.set(flightKey, (flightsMap.get(flightKey) || 0) + 1);
-
-          const current = co2Map.get(transport) || { sum: 0, count: 0 };
-          current.sum += Number(row.totalCo2Kg || 0);
-          current.count += 1;
-          co2Map.set(transport, current);
-
-          const heating = row.heatingType || "Unbekannt";
-          heatingMap.set(heating, (heatingMap.get(heating) || 0) + 1);
-
-          const electricity = row.usesGreenElectricity || "Keine Angabe";
-          electricityMap.set(electricity, (electricityMap.get(electricity) || 0) + 1);
-        });
-
-        const transportLabels = [...transportMap.keys()];
-        const transportData = [...transportMap.values()];
-        const flightLabels = [...flightsMap.keys()];
-        const flightData = [...flightsMap.values()];
-        const co2Labels = [...co2Map.keys()];
-        const co2Data = [...co2Map.values()].map((x) => Number((x.sum / x.count).toFixed(1)));
-        const heatingLabels = [...heatingMap.keys()];
-        const heatingData = [...heatingMap.values()];
-        const electricityLabels = [...electricityMap.keys()];
-        const electricityData = [...electricityMap.values()];
-
-        if (transportChart) transportChart.destroy();
-        if (flightChart) flightChart.destroy();
-        if (co2Chart) co2Chart.destroy();
-        if (heatingChart) heatingChart.destroy();
-        if (electricityChart) electricityChart.destroy();
-
-        // Transport Chart
-        transportChart = new Chart(document.getElementById("transportChart"), {
-          type: "pie",
-          data: {
-            labels: transportLabels,
-            datasets: [
-              {
-                data: transportData,
-                backgroundColor: ["#dc2626", "#991b1b", "#374151", "#1f2937", "#111827", "#6b7280"],
-                borderColor: "#ffffff",
-                borderWidth: 2,
-                hoverOffset: 24,
-              },
-            ],
-          },
-          options: chartOptions((label, value) => `${label}: ${value} Personen`),
-        });
-
-        // Flight Chart
-        flightChart = new Chart(document.getElementById("flightChart"), {
-          type: "doughnut",
-          data: {
-            labels: flightLabels,
-            datasets: [
-              {
-                data: flightData,
-                backgroundColor: ["#111827", "#dc2626", "#991b1b", "#374151", "#1f2937"],
-                borderColor: "#ffffff",
-                borderWidth: 2,
-                hoverOffset: 20,
-              },
-            ],
-          },
-          options: chartOptions((label, value) => `Flüge ${label}: ${value} Personen`),
-        });
-
-        // CO2 Chart
-        co2Chart = new Chart(document.getElementById("co2Chart"), {
-          type: "bar",
-          data: {
-            labels: co2Labels,
-            datasets: [
-              {
-                label: "kg CO2",
-                data: co2Data,
-                backgroundColor: "rgba(220, 38, 38, 0.85)",
-                borderColor: "#dc2626",
-                borderWidth: 1,
-                borderRadius: 8,
-                hoverBackgroundColor: "rgba(153, 27, 27, 0.85)",
-              },
-            ],
-          },
-          options: {
-            ...chartOptions((label, value) => `${label}: ${value} kg CO2`),
-            scales: {
-              x: { ticks: { color: "#334155" } },
-              y: { beginAtZero: true, ticks: { color: "#334155" } },
-            },
-          },
-        });
-
-        heatingChart = new Chart(document.getElementById("heatingChart"), {
-          type: "bar",
-          data: {
-            labels: heatingLabels,
-            datasets: [
-              {
-                label: "Anzahl",
-                data: heatingData,
-                backgroundColor: "rgba(15, 118, 110, 0.85)",
-                borderColor: "#0f766e",
-                borderWidth: 1,
-                borderRadius: 8,
-              },
-            ],
-          },
-          options: {
-            ...chartOptions((label, value) => `${label}: ${value} Personen`),
-            scales: {
-              x: { ticks: { color: "#334155" } },
-              y: { beginAtZero: true, ticks: { color: "#334155" } },
-            },
-          },
-        });
-
-        electricityChart = new Chart(document.getElementById("electricityChart"), {
-          type: "doughnut",
-          data: {
-            labels: electricityLabels,
-            datasets: [
-              {
-                data: electricityData,
-                backgroundColor: ["#16a34a", "#0f766e", "#0ea5e9", "#64748b", "#1e293b"],
-                borderColor: "#ffffff",
-                borderWidth: 2,
-                hoverOffset: 20,
-              },
-            ],
-          },
-          options: chartOptions((label, value) => `${label}: ${value} Personen`),
-        });
-      }
-
       // ==========================================
       // Event Listeners
       // ==========================================
@@ -672,6 +539,38 @@
         loginForm.classList.toggle("hidden");
         registerForm.classList.toggle("hidden");
         toggleAuth.textContent = loginForm.classList.contains("hidden") ? "Bereits registriert?" : "Noch kein Konto?";
+      });
+
+      loginEmailInput.addEventListener("input", () => {
+        loginEmailInput.setCustomValidity("");
+      });
+
+      loginEmailInput.addEventListener("invalid", () => {
+        const message = "Bitte eine gültige Email eingeben (z. B. user@beispiel.at).";
+        loginEmailInput.setCustomValidity(message);
+        window.alert(message);
+      });
+
+      registerEmailInput.addEventListener("input", () => {
+        registerEmailInput.setCustomValidity("");
+      });
+
+      registerEmailInput.addEventListener("invalid", () => {
+        const message = "Bitte eine gültige Email eingeben (z. B. user@beispiel.at).";
+        registerEmailInput.setCustomValidity(message);
+        window.alert(message);
+      });
+
+      registerPasswordInput.addEventListener("input", () => {
+        registerPasswordInput.setCustomValidity("");
+      });
+
+      registerPasswordInput.addEventListener("invalid", () => {
+        const message = registerPasswordInput.validity.tooShort
+          ? "Passwort ist zu kurz. Mindestens 6 Zeichen."
+          : "Bitte ein Passwort eingeben.";
+        registerPasswordInput.setCustomValidity(message);
+        window.alert(message);
       });
 
       logoutBtn.addEventListener("click", () => {
@@ -709,6 +608,23 @@
         loadChartData();
       });
 
+      function showAuthErrorFromXhr(xhr) {
+        if (!xhr) return false;
+        const triggerHeader = xhr.getResponseHeader("HX-Trigger");
+        if (!triggerHeader) return false;
+
+        try {
+          const trigger = JSON.parse(triggerHeader);
+          if (trigger && trigger.authError && trigger.authError.message) {
+            window.alert(trigger.authError.message);
+            return true;
+          }
+        } catch (_error) {
+          return false;
+        }
+        return false;
+      }
+
       document.body.addEventListener("htmx:configRequest", (event) => {
         console.log("🟡 HTMX Request Config:", {
           verb: event.detail.verb,
@@ -730,6 +646,10 @@
           status: event.detail.xhr.status,
           target: event.target.id
         });
+
+        if (event.detail?.elt?.id === "loginForm") {
+          showAuthErrorFromXhr(event.detail.xhr);
+        }
       });
 
       document.body.addEventListener("htmx:responseError", (event) => {

@@ -14,6 +14,18 @@ const ROLE = {
   SUPER_ADMIN: "SUPER_ADMIN",
 };
 
+function createAuthError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
+function isValidEmail(value) {
+  const email = String(value || "").trim();
+  if (/@localhost$/i.test(email)) return true;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 /**
  * Generate JWT token for user
  */
@@ -29,9 +41,19 @@ function signToken(user) {
  * Register a new user
  */
 async function registerUser(email, password, name = null) {
+  if (!email || !password) {
+    throw createAuthError("MISSING_CREDENTIALS", "Email and password required");
+  }
+  if (!isValidEmail(email)) {
+    throw createAuthError("INVALID_EMAIL_FORMAT", "Invalid email format");
+  }
+  if (String(password).length < 6) {
+    throw createAuthError("PASSWORD_TOO_SHORT", "Password too short");
+  }
+
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    throw new Error("Email already exists");
+    throw createAuthError("EMAIL_EXISTS", "Email already exists");
   }
 
   const hash = await bcrypt.hash(password, 10);
@@ -54,17 +76,20 @@ async function registerUser(email, password, name = null) {
  */
 async function loginUser(email, password) {
   if (!email || !password) {
-    throw new Error("Email and password required");
+    throw createAuthError("MISSING_CREDENTIALS", "Email and password required");
+  }
+  if (!isValidEmail(email)) {
+    throw createAuthError("INVALID_EMAIL_FORMAT", "Invalid email format");
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    throw new Error("Invalid credentials");
+    throw createAuthError("USER_NOT_FOUND", "User not found");
   }
 
   const ok = await bcrypt.compare(password, user.password);
   if (!ok) {
-    throw new Error("Invalid credentials");
+    throw createAuthError("INVALID_PASSWORD", "Invalid password");
   }
 
   return {

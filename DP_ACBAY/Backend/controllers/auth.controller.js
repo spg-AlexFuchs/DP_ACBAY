@@ -1,5 +1,35 @@
 const { loginUser, registerUser, getCurrentUser } = require("../services/auth.services");
 
+function mapLoginError(error) {
+  switch (error?.code) {
+    case "MISSING_CREDENTIALS":
+      return { status: 400, message: "Email und Passwort sind erforderlich." };
+    case "INVALID_EMAIL_FORMAT":
+      return { status: 400, message: "Bitte eine gueltige Email eingeben." };
+    case "USER_NOT_FOUND":
+      return { status: 401, message: "User existiert nicht." };
+    case "INVALID_PASSWORD":
+      return { status: 401, message: "Falsches Passwort." };
+    default:
+      return { status: 500, message: "Login fehlgeschlagen." };
+  }
+}
+
+function mapRegisterError(error) {
+  switch (error?.code) {
+    case "MISSING_CREDENTIALS":
+      return { status: 400, message: "Email und Passwort sind erforderlich." };
+    case "INVALID_EMAIL_FORMAT":
+      return { status: 400, message: "Bitte eine gueltige Email eingeben." };
+    case "PASSWORD_TOO_SHORT":
+      return { status: 400, message: "Passwort ist zu kurz. Mindestens 6 Zeichen." };
+    case "EMAIL_EXISTS":
+      return { status: 400, message: "Diese Email ist bereits registriert." };
+    default:
+      return { status: 400, message: error?.message || "Registrierung fehlgeschlagen." };
+  }
+}
+
 /**
  * Login user - JSON response
  */
@@ -13,14 +43,10 @@ async function login(req, res) {
 
   try {
     const result = await loginUser(email, password);
-    if (!result) {
-      return res
-        .status(401)
-        .json({ error: "Ungültige Anmeldedaten" });
-    }
     res.json(result);
   } catch (err) {
-    res.status(401).json({ error: err.message });
+    const mapped = mapLoginError(err);
+    res.status(mapped.status).json({ error: mapped.message });
   }
 }
 
@@ -33,8 +59,9 @@ async function loginHx(req, res) {
   const { email, password } = req.body;
   if (!email || !password) {
     console.log("❌ Missing email or password");
+    res.setHeader("HX-Trigger", JSON.stringify({ authError: { message: "Email und Passwort sind erforderlich." } }));
     return res
-      .status(400)
+      .status(200)
       .send(
         `<div class="text-sm text-red-700">Email und Passwort sind erforderlich.</div>`
       );
@@ -43,12 +70,6 @@ async function loginHx(req, res) {
   try {
     console.log("🟡 Calling loginUser...");
     const result = await loginUser(email, password);
-    if (!result) {
-      console.log("❌ Login invalid credentials");
-      return res
-        .status(401)
-        .send(`<div class="text-sm text-red-700">Login fehlgeschlagen.</div>`);
-    }
 
     console.log("✅ Login successful");
     res.setHeader(
@@ -60,9 +81,11 @@ async function loginHx(req, res) {
     );
   } catch (err) {
     console.error("❌ Login error:", err.message, err.stack);
+    const mapped = mapLoginError(err);
+    res.setHeader("HX-Trigger", JSON.stringify({ authError: { message: mapped.message } }));
     return res
-      .status(500)
-      .send(`<div class="text-sm text-red-700">Login fehlgeschlagen.</div>`);
+      .status(200)
+      .send(`<div class="text-sm text-red-700">${mapped.message}</div>`);
   }
 }
 
@@ -81,7 +104,8 @@ async function register(req, res) {
     const result = await registerUser(email, password, name);
     res.json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    const mapped = mapRegisterError(err);
+    res.status(mapped.status).json({ error: mapped.message });
   }
 }
 
@@ -120,10 +144,11 @@ async function registerHx(req, res) {
     );
   } catch (err) {
     console.error("❌ Register error:", err.message, err.stack);
+    const mapped = mapRegisterError(err);
     return res
-      .status(400)
+      .status(mapped.status)
       .send(
-        `<div class="text-sm text-red-700">${err.message || "Registrierung fehlgeschlagen."}</div>`
+        `<div class="text-sm text-red-700">${mapped.message}</div>`
       );
   }
 }

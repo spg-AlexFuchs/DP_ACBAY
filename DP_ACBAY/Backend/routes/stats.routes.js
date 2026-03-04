@@ -5,6 +5,7 @@ const {
   getMySurveys,
   getEmissionFactors,
   getPublicAggregations,
+  getPrivateAggregations,
   getHrAggregations,
 } = require("../controllers/stats.controller");
 const { auth, requireRole } = require("../middleware/auth.middleware");
@@ -16,6 +17,7 @@ const router = express.Router();
 router.get("/public", getPublicSurveys);
 router.get("/emission-factors", getEmissionFactors);
 router.get("/aggregations", getPublicAggregations);
+router.get("/aggregations/private", auth, getPrivateAggregations);
 
 // Authenticated endpoints
 router.get("/", auth, getUserSurveys);
