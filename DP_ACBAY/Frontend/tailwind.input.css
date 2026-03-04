@@ -38,6 +38,73 @@
     @apply bg-gradient-to-r from-slate-950 via-slate-800 to-red-900;
   }
 
+  .btn-header-back {
+    @apply inline-flex items-center rounded-lg bg-white/35 px-4 py-3 font-semibold whitespace-nowrap text-white transition hover:bg-white/45 hover:text-white;
+    color: #ffffff !important;
+  }
+
+  .btn-header-back:hover,
+  .btn-header-back:focus,
+  .btn-header-back:visited {
+    color: #ffffff !important;
+  }
+
+  .mode-indicator {
+    @apply rounded-xl border border-white/20 bg-white/10 px-4 py-3;
+  }
+
+  .mode-indicator-label {
+    @apply text-xs uppercase tracking-wider text-slate-200;
+  }
+
+  .mode-indicator-value {
+    @apply mt-1 text-lg font-semibold text-white;
+  }
+
+  .mode-indicator-sub {
+    @apply mt-1 text-xs text-slate-200;
+  }
+
+  .page-header {
+    @apply rounded-2xl bg-red-700 p-8 text-white shadow-xl;
+  }
+
+  .page-header-inner {
+    @apply flex flex-col gap-6 md:flex-row md:items-end md:justify-between;
+  }
+
+  .page-header-badge {
+    @apply inline-flex items-center rounded-full border border-red-300/40 bg-red-500/20 px-3 py-1 text-xs font-semibold tracking-wide;
+  }
+
+  .page-header-title {
+    @apply mt-4 text-3xl font-bold md:text-4xl;
+  }
+
+  .page-header-subtitle {
+    @apply mt-2 max-w-3xl text-sm text-slate-200 md:text-base;
+  }
+
+  .footer-nav-links {
+    @apply flex flex-wrap gap-4 text-sm md:gap-6;
+  }
+
+  .footer-link {
+    @apply font-semibold text-slate-700 hover:text-red-700;
+  }
+
+  .surface-card {
+    @apply rounded-2xl bg-white p-5 shadow;
+  }
+
+  .table-shell {
+    @apply mt-3 overflow-x-auto rounded-xl border border-slate-200;
+  }
+
+  .table-shell-scroll {
+    @apply mt-3 overflow-y-auto overflow-x-auto rounded-xl border border-slate-200 h-[50vh];
+  }
+
   .site-footer {
     position: fixed;
     left: 0;

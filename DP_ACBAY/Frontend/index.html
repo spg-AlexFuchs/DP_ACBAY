@@ -13,27 +13,27 @@
   <body class="min-h-screen bg-white text-slate-900 flex flex-col has-fixed-footer">
     <div class="w-full flex-1 bg-white px-6 py-6 md:p-10">
       <!-- Header -->
-      <header class="rounded-2xl bg-red-700 p-8 text-white shadow-xl">
-        <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+      <header class="page-header">
+        <div class="page-header-inner">
           <div>
-            <div class="inline-flex items-center rounded-full border border-red-300/40 bg-red-500/20 px-3 py-1 text-xs font-semibold tracking-wide">
+            <div class="page-header-badge">
               CO2 Dashboard
             </div>
-            <h1 class="mt-4 text-3xl font-bold md:text-4xl">Nachhaltigkeitsbericht</h1>
-            <p class="mt-2 max-w-3xl text-sm text-slate-200 md:text-base">
+            <h1 class="page-header-title">Nachhaltigkeitsbericht</h1>
+            <p class="page-header-subtitle">
               Verfolgen Sie Ihre CO2-Emissionen und tragen Sie zu einer nachhaltigen Zukunft bei.
             </p>
           </div>
           <div class="flex flex-col items-end gap-2">
-            <div class="rounded-xl border border-white/20 bg-white/10 px-4 py-3">
-              <div class="text-xs uppercase tracking-wider text-slate-200">Modus</div>
-              <div id="modeLabel" class="mt-1 text-lg font-semibold">Öffentlich</div>
-              <div id="modeUser" class="mt-1 text-xs text-slate-200"></div>
+            <div class="mode-indicator">
+              <div class="mode-indicator-label">Modus</div>
+              <div id="modeLabel" class="mode-indicator-value">Öffentlich</div>
+              <div id="modeUser" class="mode-indicator-sub"></div>
             </div>
-            <a id="adminLink" href="admin.html" class="hidden text-sm font-medium text-white hover:text-slate-100">
+            <a id="adminLink" href="admin.html" class="hidden btn-header-back">
               Zum Admin-Panel
             </a>
-            <a id="myAreaLink" href="mein-bereich.html" class="hidden text-sm font-medium text-white hover:text-slate-100">
+            <a id="myAreaLink" href="mein-bereich.html" class="hidden btn-header-back">
               Mein Bereich
             </a>
           </div>
@@ -96,6 +96,7 @@
               name="name"
               type="text"
               placeholder="Vorname Nachname"
+              required
               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
             />
             <input
@@ -192,15 +193,11 @@
       <footer class="site-footer border-t border-slate-300">
         <div class="flex flex-col justify-between gap-3 md:flex-row md:items-center">
           <!-- Navigation Links -->
-          <nav class="flex flex-wrap gap-4 text-sm md:gap-6">
-            <a href="impressum.html" class="font-semibold text-slate-700 hover:text-red-700">Impressum</a>
-            <a href="offenlegung.html" class="font-semibold text-slate-700 hover:text-red-700">Offenlegung</a>
-            <a href="datenschutz.html" class="font-semibold text-slate-700 hover:text-red-700">Datenschutz</a>
-            <a href="kontakt.html" class="font-semibold text-slate-700 hover:text-red-700">Kontakt</a>
-            <a href="agb.html" class="font-semibold text-slate-700 hover:text-red-700">AGB</a>
-            <a href="verfuegbarkeit.html" class="font-semibold text-slate-700 hover:text-red-700">Verfügbarkeit</a>
-            <a href="medientransparenz.html" class="font-semibold text-slate-700 hover:text-red-700">Medientransparenz</a>
-            <a href="barrierefreiheit.html" class="font-semibold text-slate-700 hover:text-red-700">Barrierefreiheit</a>
+          <nav class="footer-nav-links">
+            <a href="datenschutz.html" class="footer-link">Datenschutz</a>
+            <a href="kontakt.html" class="footer-link">Kontakt</a>
+            <a href="esg.html" class="footer-link">ESG</a>
+            <a href="co2.html" class="footer-link">CO2</a>
           </nav>
 
         </div>
@@ -223,6 +220,7 @@
       const loginForm = document.getElementById("loginForm");
       const registerForm = document.getElementById("registerForm");
       const loginEmailInput = loginForm.querySelector('input[name="email"]');
+      const registerNameInput = registerForm.querySelector('input[name="name"]');
       const registerEmailInput = registerForm.querySelector('input[name="email"]');
       const registerPasswordInput = registerForm.querySelector('input[name="password"]');
       const authPanel = document.getElementById("authPanel");
@@ -281,6 +279,13 @@
         authTitle.textContent = loginForm.classList.contains("hidden")
           ? "Registrieren"
           : "Login";
+      }
+
+      function showAuthInlineError(message) {
+        const feedback = document.getElementById("authFeedback");
+        if (!feedback) return;
+        feedback.textContent = message;
+        feedback.className = "mt-3 min-h-5 text-sm text-red-700";
       }
 
       function updateAuthFormsVisibility(privateMode, role) {
@@ -531,17 +536,27 @@
       loginEmailInput.addEventListener("invalid", () => {
         const message = "Bitte eine gültige Email eingeben (z. B. user@beispiel.at).";
         loginEmailInput.setCustomValidity(message);
-        window.alert(message);
+        showAuthInlineError(message);
       });
 
       registerEmailInput.addEventListener("input", () => {
         registerEmailInput.setCustomValidity("");
       });
 
+      registerNameInput.addEventListener("input", () => {
+        registerNameInput.setCustomValidity("");
+      });
+
+      registerNameInput.addEventListener("invalid", () => {
+        const message = "Geben Sie einen Namen ein.";
+        registerNameInput.setCustomValidity(message);
+        showAuthInlineError(message);
+      });
+
       registerEmailInput.addEventListener("invalid", () => {
         const message = "Bitte eine gültige Email eingeben (z. B. user@beispiel.at).";
         registerEmailInput.setCustomValidity(message);
-        window.alert(message);
+        showAuthInlineError(message);
       });
 
       registerPasswordInput.addEventListener("input", () => {
@@ -553,7 +568,7 @@
           ? "Passwort ist zu kurz. Mindestens 6 Zeichen."
           : "Bitte ein Passwort eingeben.";
         registerPasswordInput.setCustomValidity(message);
-        window.alert(message);
+        showAuthInlineError(message);
       });
 
       logoutBtn.addEventListener("click", () => {
@@ -601,7 +616,7 @@
         try {
           const trigger = JSON.parse(triggerHeader);
           if (trigger && trigger.authError && trigger.authError.message) {
-            window.alert(trigger.authError.message);
+            showAuthInlineError(trigger.authError.message);
             return true;
           }
         } catch (_error) {
@@ -711,28 +726,14 @@
 
     <!-- Bottom Info Bar -->
     <div class="border-t border-slate-300 bg-white">
-      <div class="mx-auto max-w-7xl px-6 py-6 md:p-10">
-        <div class="flex flex-col justify-between gap-6 md:flex-row">
+      <div class="w-full px-6 py-6 md:p-10">
+        <div class="flex flex-col items-center justify-center gap-6">
           <!-- Logo and Tagline -->
-          <div>
-            <div class="text-3xl font-black">
-              <span class="text-slate-900">E</span><span class="text-red-700">V</span><span class="text-slate-900">N</span>
-            </div>
-            <p class="mt-1 text-sm text-slate-600">Energie. Wasser. Leben.</p>
+          <div class="flex items-center gap-4 text-center">
+            <img src="GetSmartLogo.png" alt="Get Smart Logo" class="h-16 w-auto" />
+            <p class="text-base text-slate-600 md:text-lg">Get Smart "Die kluge Webseite für CO2-Einsparung"</p>
           </div>
           
-          <!-- Contact Info -->
-          <div class="text-right text-sm">
-            <div class="flex items-center justify-end gap-2">
-              <span class="text-lg">☎</span>
-              <span class="font-semibold text-slate-900">0800 800 100</span>
-            </div>
-            <p class="mt-1 text-xs text-slate-600">
-              Wir sind gerne für Sie da. Kostenfrei aus ganz Österreich von<br />
-              <span class="font-semibold">Montag – Donnerstag von 7 bis 19 Uhr</span><br />
-              <span class="font-semibold">Freitag von 7 bis 17 Uhr</span>
-            </p>
-          </div>
         </div>
       </div>
     </div>

@@ -9,90 +9,188 @@
   </head>
   <body class="min-h-screen bg-white text-slate-900 flex flex-col has-fixed-footer">
     <div class="w-full flex-1 bg-white px-6 py-6 md:p-10">
-      <header class="rounded-2xl bg-red-700 p-8 text-white shadow-xl">
-        <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <header class="page-header">
+        <div class="page-header-inner">
           <div>
-            <div class="inline-flex items-center rounded-full border border-red-300/40 bg-red-500/20 px-3 py-1 text-xs font-semibold tracking-wide">
+            <div class="page-header-badge">
               Mein Bereich
             </div>
-            <h1 class="mt-4 text-3xl font-bold md:text-4xl">Eigene Daten eingeben</h1>
-            <p class="mt-2 text-sm text-slate-200 md:text-base">
-              Eingabemaske für deine persönlichen Angaben. Es werden noch keine Berechnungen ausgeführt.
+            <h1 class="page-header-title">Umfragewerte eingeben</h1>
+            <p class="page-header-subtitle">
+              Hier kannst du die Auswertungs-/Umfragewerte manuell eingeben, die sonst aus der Excel-Datei kommen.
             </p>
           </div>
-          <a href="index.html" class="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-slate-100">
-            Zurück zum Dashboard
+          <a href="index.html" class="btn-header-back">
+            ← Zurück zum Dashboard
           </a>
         </div>
       </header>
 
       <main class="mt-6">
-        <section class="rounded-2xl bg-white p-5 shadow">
-          <h2 class="text-xl font-semibold">Persönliche Eingabe</h2>
-          <form class="mt-4 grid gap-4 md:grid-cols-2">
-            <label class="text-sm">
-              <span class="mb-1 block font-medium">Arbeitstage pro Woche</span>
-              <input type="number" min="0" max="7" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-            </label>
+        <section class="surface-card">
+          <h2 class="text-xl font-semibold">Umfragewerte (manuelle Eingabe)</h2>
+          <p class="mt-1 text-sm text-slate-500">Felder entsprechen den Survey-/Auswertungswerten der App.</p>
 
-            <label class="text-sm">
-              <span class="mb-1 block font-medium">Distanz zur Arbeit (km)</span>
-              <input type="number" min="0" step="0.1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-            </label>
+          <form class="mt-4 space-y-6">
+            <div>
+              <h3 class="text-base font-semibold text-slate-900">Mobilität</h3>
+              <div class="mt-3 grid gap-4 md:grid-cols-2">
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Arbeitstage pro Woche (`officeDaysPerWeek`)</span>
+                  <input type="number" min="0" max="7" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Distanz zur Arbeit in km (`distanceKm`)</span>
+                  <input type="number" min="0" step="0.1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Hauptverkehrsmittel (`transportMain`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>CAR_PRIVATE</option>
+                    <option>PUBLIC_TRANSPORT</option>
+                    <option>BIKE</option>
+                    <option>WALK</option>
+                  </select>
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Alternatives Verkehrsmittel (`alternativeTransport`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>NONE</option>
+                    <option>BIKE</option>
+                    <option>PUBLIC_TRANSPORT</option>
+                    <option>WALK</option>
+                  </select>
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Nutzung alternatives Verkehrsmittel (`alternativeTransportFreq`)</span>
+                  <input type="number" min="0" max="1" step="0.01" placeholder="0 bis 1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Autotyp (`carType`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>PETROL</option>
+                    <option>DIESEL</option>
+                    <option>HYBRID</option>
+                    <option>ELECTRIC</option>
+                  </select>
+                </label>
+              </div>
+            </div>
 
-            <label class="text-sm">
-              <span class="mb-1 block font-medium">Hauptverkehrsmittel</span>
-              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option>Auto</option>
-                <option>Öffis</option>
-                <option>Fahrrad</option>
-                <option>Zu Fuß</option>
-                <option>Sonstiges</option>
-              </select>
-            </label>
+            <div>
+              <h3 class="text-base font-semibold text-slate-900">Flug</h3>
+              <div class="mt-3 grid gap-4 md:grid-cols-2">
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Flüge pro Jahr (`flightsPerYear`)</span>
+                  <input type="number" min="0" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Flugdistanz in km (`flightDistanceKm`)</span>
+                  <input type="number" min="0" step="1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                </label>
+              </div>
+            </div>
 
-            <label class="text-sm">
-              <span class="mb-1 block font-medium">Flüge pro Jahr</span>
-              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option>0</option>
-                <option>1-2</option>
-                <option>2-5</option>
-                <option>>5</option>
-              </select>
-            </label>
+            <div>
+              <h3 class="text-base font-semibold text-slate-900">Wohnen</h3>
+              <div class="mt-3 grid gap-4 md:grid-cols-2">
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Heizungsart (`heatingType`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>GAS</option>
+                    <option>HEAT_PUMP</option>
+                    <option>DISTRICT_HEATING</option>
+                    <option>OIL</option>
+                  </select>
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Warmwasser (`warmWaterType`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>GAS</option>
+                    <option>ELECTRICITY</option>
+                    <option>DISTRICT_HEATING</option>
+                  </select>
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Ökostrom (`usesGreenElectricity`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>YES</option>
+                    <option>NO</option>
+                    <option>PARTLY</option>
+                  </select>
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Smart-Stromnutzung (`smartElectricityUsage`)</span>
+                  <input type="number" min="0" max="1" step="0.1" placeholder="0 bis 1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                </label>
+              </div>
+            </div>
 
-            <label class="text-sm">
-              <span class="mb-1 block font-medium">Heizungsart</span>
-              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option>Gas</option>
-                <option>Öl</option>
-                <option>Fernwärme</option>
-                <option>Wärmepumpe</option>
-                <option>Andere</option>
-              </select>
-            </label>
+            <div>
+              <h3 class="text-base font-semibold text-slate-900">Verhalten</h3>
+              <div class="mt-3 grid gap-4 md:grid-cols-2">
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Feuerwerk pro Jahr (`fireworkPerYear`)</span>
+                  <input type="number" min="0" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">CO2-Wichtigkeit 1-6 (`co2Importance`)</span>
+                  <input type="number" min="1" max="6" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Einkauf/Transport öko (`shoppingTransportEcoChoice`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>YES</option>
+                    <option>NO</option>
+                    <option>SOMETIMES</option>
+                  </select>
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Effiziente Geräte (`usesEnergyEfficientAppliances`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>YES</option>
+                    <option>NO</option>
+                    <option>PARTLY</option>
+                  </select>
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Smart Devices (`usesSmartDevices`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>YES</option>
+                    <option>NO</option>
+                    <option>PARTLY</option>
+                  </select>
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Regionale Produkte (`buysRegionalProducts`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>YES</option>
+                    <option>NO</option>
+                    <option>SOMETIMES</option>
+                  </select>
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Nachhaltige Kleidung (`buysSustainableClothing`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>YES</option>
+                    <option>NO</option>
+                    <option>SOMETIMES</option>
+                  </select>
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium">Online-Shopping vermeiden (`avoidsOnlineShopping`)</span>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option>YES</option>
+                    <option>NO</option>
+                    <option>SOMETIMES</option>
+                  </select>
+                </label>
+              </div>
+            </div>
 
-            <label class="text-sm">
-              <span class="mb-1 block font-medium">Warmwasser</span>
-              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option>Gas</option>
-                <option>Strom</option>
-                <option>Solar</option>
-                <option>Andere</option>
-              </select>
-            </label>
-
-            <label class="text-sm md:col-span-2">
-              <span class="mb-1 block font-medium">Ökostrom</span>
-              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option>Ja</option>
-                <option>Nein</option>
-              </select>
-            </label>
-
-            <div class="md:col-span-2">
+            <div>
               <button type="button" class="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800">
-                Speichern
+                Umfragewerte speichern
               </button>
             </div>
           </form>
@@ -102,15 +200,11 @@
 
     <footer class="site-footer border-t border-slate-300">
       <div class="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-        <nav class="flex flex-wrap gap-4 text-sm md:gap-6">
-          <a href="impressum.html" class="font-semibold text-slate-700 hover:text-red-700">Impressum</a>
-          <a href="offenlegung.html" class="font-semibold text-slate-700 hover:text-red-700">Offenlegung</a>
-          <a href="datenschutz.html" class="font-semibold text-slate-700 hover:text-red-700">Datenschutz</a>
-          <a href="kontakt.html" class="font-semibold text-slate-700 hover:text-red-700">Kontakt</a>
-          <a href="agb.html" class="font-semibold text-slate-700 hover:text-red-700">AGB</a>
-          <a href="verfuegbarkeit.html" class="font-semibold text-slate-700 hover:text-red-700">Verfügbarkeit</a>
-          <a href="medientransparenz.html" class="font-semibold text-slate-700 hover:text-red-700">Medientransparenz</a>
-          <a href="barrierefreiheit.html" class="font-semibold text-slate-700 hover:text-red-700">Barrierefreiheit</a>
+        <nav class="footer-nav-links">
+          <a href="datenschutz.html" class="footer-link">Datenschutz</a>
+          <a href="kontakt.html" class="footer-link">Kontakt</a>
+          <a href="esg.html" class="footer-link">ESG</a>
+          <a href="co2.html" class="footer-link">CO2</a>
         </nav>
       </div>
     </footer>
