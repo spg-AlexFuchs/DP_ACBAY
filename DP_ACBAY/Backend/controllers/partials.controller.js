@@ -16,11 +16,11 @@ function summaryHtml(totalSurveys, avgCo2, latestDate, palette = "public") {
   if (palette === "private") {
     return `
       <div class="rounded-xl border border-slate-200 bg-gradient-to-br from-purple-50 to-purple-100 p-4">
-        <div class="text-xs uppercase tracking-wide text-slate-600">Personenwerte gesamt</div>
+        <div class="text-xs uppercase tracking-wide text-slate-600">Datensätze</div>
         <div class="mt-2 text-3xl font-bold text-purple-700">${totalSurveys}</div>
       </div>
       <div class="rounded-xl border border-slate-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4">
-        <div class="text-xs uppercase tracking-wide text-slate-600">CO2 (kg)</div>
+        <div class="text-xs uppercase tracking-wide text-slate-600">CO2 (kg) Durchschnitt</div>
         <div class="mt-2 text-3xl font-bold text-orange-700">${avgCo2}</div>
       </div>
       <div class="rounded-xl border border-slate-200 bg-gradient-to-br from-cyan-50 to-cyan-100 p-4">
@@ -32,11 +32,11 @@ function summaryHtml(totalSurveys, avgCo2, latestDate, palette = "public") {
 
   return `
     <div class="rounded-xl border border-slate-200 bg-gradient-to-br from-red-50 to-red-100 p-4">
-      <div class="text-xs uppercase tracking-wide text-slate-600">Personenwerte gesamt</div>
+      <div class="text-xs uppercase tracking-wide text-slate-600">Datensätze</div>
       <div class="mt-2 text-3xl font-bold text-red-700">${totalSurveys}</div>
     </div>
     <div class="rounded-xl border border-slate-200 bg-gradient-to-br from-green-50 to-green-100 p-4">
-      <div class="text-xs uppercase tracking-wide text-slate-600">CO2 (kg)</div>
+      <div class="text-xs uppercase tracking-wide text-slate-600">CO2 (kg) Durchschnitt</div>
       <div class="mt-2 text-3xl font-bold text-green-700">${avgCo2}</div>
     </div>
     <div class="rounded-xl border border-slate-200 bg-gradient-to-br from-blue-50 to-blue-100 p-4">

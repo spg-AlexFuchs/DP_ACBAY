@@ -47,7 +47,7 @@
         <!-- Login Section -->
         <section id="authPanel" class="rounded-2xl bg-white p-5 shadow lg:col-span-4">
           <div class="flex items-center justify-between">
-            <h2 class="text-xl font-semibold">Login</h2>
+            <h2 id="authTitle" class="text-xl font-semibold">Login</h2>
             <button id="toggleAuth" type="button" class="text-sm font-medium text-red-700 hover:text-red-800">
               Noch kein Konto?
             </button>
@@ -109,7 +109,7 @@
               required
               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
             />
-            <button type="submit" class="w-full rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-900">
+            <button type="submit" class="w-full rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white hover:bg-red-800">
               Registrieren
             </button>
           </form>
@@ -168,7 +168,7 @@
 
             <!-- Electricity Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Oekostrom Nutzung</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Ökostrom Nutzung</div>
               <div class="h-56">
                 <canvas id="electricityChart"></canvas>
               </div>
@@ -194,7 +194,7 @@
                   <th class="px-3 py-2">Flüge/Jahr</th>
                   <th class="px-3 py-2">Heizung</th>
                   <th class="px-3 py-2">Warmwasser</th>
-                  <th class="px-3 py-2">Oekostrom</th>
+                  <th class="px-3 py-2">Ökostrom</th>
                   <th class="px-3 py-2">CO2 gesamt (kg)</th>
                 </tr>
               </thead>
@@ -265,6 +265,7 @@
       const logoutBtn = document.getElementById("logoutBtn");
       const adminLink = document.getElementById("adminLink");
       const toggleAuth = document.getElementById("toggleAuth");
+      const authTitle = document.getElementById("authTitle");
       const loginForm = document.getElementById("loginForm");
       const registerForm = document.getElementById("registerForm");
       const loginEmailInput = loginForm.querySelector('input[name="email"]');
@@ -320,6 +321,12 @@
         return Boolean(getToken());
       }
 
+      function syncAuthTitle() {
+        authTitle.textContent = loginForm.classList.contains("hidden")
+          ? "Registrieren"
+          : "Login";
+      }
+
       function updateAuthFormsVisibility(privateMode, role) {
         const isAdminLoggedIn = privateMode && isAdminRole(role);
 
@@ -337,6 +344,7 @@
           registerForm.classList.add("hidden");
           toggleAuth.textContent = "Noch kein Konto?";
         }
+        syncAuthTitle();
       }
 
       function applyMode() {
@@ -534,6 +542,7 @@
         loginForm.classList.toggle("hidden");
         registerForm.classList.toggle("hidden");
         toggleAuth.textContent = loginForm.classList.contains("hidden") ? "Bereits registriert?" : "Noch kein Konto?";
+        syncAuthTitle();
       });
 
       loginEmailInput.addEventListener("input", () => {
@@ -585,6 +594,7 @@
             loginForm.classList.remove("hidden");
             registerForm.classList.add("hidden");
             toggleAuth.textContent = "Noch kein Konto?";
+            syncAuthTitle();
             // Clear the form
             registerForm.reset();
             feedback.textContent = "";
@@ -686,6 +696,7 @@
       // ==========================================
       // Initialize
       // ==========================================
+      syncAuthTitle();
       applyMode();
       loadChartData();
 
