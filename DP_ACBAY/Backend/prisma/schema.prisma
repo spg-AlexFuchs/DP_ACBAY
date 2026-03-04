@@ -57,6 +57,12 @@ model Survey {
   // ===== Verhalten =====
   fireworkPerYear Int? // 0,1,2
   co2Importance   Int? // 1-6
+  shoppingTransportEcoChoice String?
+  usesEnergyEfficientAppliances String?
+  usesSmartDevices String?
+  buysRegionalProducts String?
+  buysSustainableClothing String?
+  avoidsOnlineShopping String?
 
   // ===== Ergebnis =====
   totalCo2Kg Float? // Hier speicherst du das Ergebnis

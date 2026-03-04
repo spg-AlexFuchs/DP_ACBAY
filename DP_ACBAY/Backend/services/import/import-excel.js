@@ -204,6 +204,41 @@ const ELECTRICITY_ENERGY_LABELS = [
   "Stromverbrauch österreich/person",
 ];
 
+const CONSUMPTION_BASE_LABELS = [
+  "Ernährung",
+  "Konsumgüter",
+  "Alltagsmobilität (ohne Pendeln)",
+];
+
+const CONSUMPTION_CLOTHING_MAP = new Map([
+  ["immer", "Nachhaltige Kleidung – immer"],
+  ["manchmal", "Nachhaltige Kleidung – manchmal"],
+]);
+
+const CONSUMPTION_REGIONAL_MAP = new Map([
+  ["oft", "Regionaler Einkauf – oft"],
+  ["manchmal", "Regionaler Einkauf – manchmal"],
+]);
+
+const CONSUMPTION_ONLINE_MAP = new Map([
+  ["oft", "Verzicht auf Onlinekauf – oft"],
+  ["manchmal", "Verzicht auf Onlinekauf – manchmal"],
+]);
+
+const CONSUMPTION_SHOPPING_TRANSPORT_MAP = new Map([
+  ["ja", "Umweltfreundlicher Transport beim Einkauf – Ja"],
+  ["manchmal", "Umweltfreundlicher Transport beim Einkauf – Manchmal"],
+]);
+
+const CONSUMPTION_APPLIANCES_MAP = new Map([
+  ["ja, alle", "Energiesparende Geräte – alle (Herstellung)"],
+  ["ja alle", "Energiesparende Geräte – alle (Herstellung)"],
+]);
+
+const CONSUMPTION_SMART_DEVICES_MAP = new Map([
+  ["ja", "Smarte Geräte – Ja (Herstellung)"],
+]);
+
 function parseOfficeDays(text) {
   const norm = normalizeEnum(text);
   const firstDigit = norm.match(/\d+/);
@@ -219,6 +254,7 @@ function parseDistanceKm(text) {
   for (const [k, v] of DISTANCE_MAP.entries()) {
     if (norm.includes(k)) return v;
   }
+  if (norm.includes("uber60") || norm.includes("ueber60") || norm.includes("mehrals60")) return 80;
   return 0;
 }
 
@@ -237,6 +273,63 @@ function parseFlightsPerYear(text) {
   }
   const num = toNumber(text);
   return num === null ? null : Math.round(num);
+}
+
+function parseFireworkAdjustmentLabel(text) {
+  const norm = normalizeEnum(text);
+  if (!norm || norm.includes("nie")) return null;
+  if (norm.includes("1/jahr") || norm.includes("1x/jahr") || norm.includes("1 mal")) {
+    return "Feuerwerk 1/Jahr";
+  }
+
+  const digitMatch = norm.match(/\d+/);
+  if (digitMatch) {
+    const n = Number(digitMatch[0]);
+    if (Number.isFinite(n)) {
+      if (n > 1) return "Feuerwerk >1/Jahr";
+      if (n === 1) return "Feuerwerk 1/Jahr";
+    }
+  }
+
+  if (norm.includes("mehrmals") || norm.includes("oft")) return "Feuerwerk >1/Jahr";
+  if (norm.includes("selten") || norm.includes("manchmal")) return "Feuerwerk 1/Jahr";
+  return null;
+}
+
+function factorValueByLabel(factors, label) {
+  return findFactor(factors, label)?.valueNumber || 0;
+}
+
+function computeConsumptionKg(input, factors) {
+  const baseTons = CONSUMPTION_BASE_LABELS.reduce(
+    (sum, label) => sum + factorValueByLabel(factors, label),
+    0
+  );
+
+  const clothingLabel = pickByIncludes(input.sustainableClothingText, CONSUMPTION_CLOTHING_MAP);
+  const regionalLabel = pickByIncludes(input.regionalProductsText, CONSUMPTION_REGIONAL_MAP);
+  const onlineLabel = pickByIncludes(input.avoidsOnlineShoppingText, CONSUMPTION_ONLINE_MAP);
+  const shoppingTransportLabel = pickByIncludes(
+    input.shoppingTransportEcoChoiceText,
+    CONSUMPTION_SHOPPING_TRANSPORT_MAP
+  );
+  const appliancesLabel = pickByIncludes(
+    input.usesEnergyEfficientAppliancesText,
+    CONSUMPTION_APPLIANCES_MAP
+  );
+  const smartDevicesLabel = pickByIncludes(input.usesSmartDevicesText, CONSUMPTION_SMART_DEVICES_MAP);
+  const fireworkLabel = parseFireworkAdjustmentLabel(input.fireworkText);
+
+  const adjustmentTons =
+    factorValueByLabel(factors, clothingLabel) +
+    factorValueByLabel(factors, regionalLabel) +
+    factorValueByLabel(factors, onlineLabel) +
+    factorValueByLabel(factors, shoppingTransportLabel) +
+    factorValueByLabel(factors, appliancesLabel) +
+    factorValueByLabel(factors, smartDevicesLabel) +
+    factorValueByLabel(factors, fireworkLabel);
+
+  return (baseTons + adjustmentTons) * 1000;
 }
 
 function computeSurveyTotal(input, factors) {
@@ -296,7 +389,20 @@ function computeSurveyTotal(input, factors) {
     }
   }
 
-  return commuteKg + flightKg + warmWaterKg + heatingKg + electricityKg;
+  const consumptionKg = computeConsumptionKg(
+    {
+      sustainableClothingText: input.sustainableClothingText,
+      regionalProductsText: input.regionalProductsText,
+      avoidsOnlineShoppingText: input.avoidsOnlineShoppingText,
+      shoppingTransportEcoChoiceText: input.shoppingTransportEcoChoiceText,
+      usesEnergyEfficientAppliancesText: input.usesEnergyEfficientAppliancesText,
+      usesSmartDevicesText: input.usesSmartDevicesText,
+      fireworkText: input.fireworkText,
+    },
+    factors
+  );
+
+  return commuteKg + flightKg + warmWaterKg + heatingKg + electricityKg + consumptionKg;
 }
 
 function getSheetRows(workbook, sheetName) {
@@ -334,6 +440,15 @@ async function importEmissionFactors() {
       unitAliases: ["Einheit"],
       sourceAliases: ["Quelle"],
     },
+    {
+      sheetName: "Konsum",
+      category: "consumption",
+      labelAliases: ["Kategorie"],
+      valueAliases: ["Basiswert_t_CO2e"],
+      fallbackValueAliases: ["Max_Reduktion_t_CO2e"],
+      unitAliases: ["Einheit"],
+      sourceAliases: ["Quelle"],
+    },
   ];
 
   for (const cfg of configs) {
@@ -342,12 +457,14 @@ async function importEmissionFactors() {
     const headers = Object.keys(rows[0]);
     const labelKey = findColumnName(headers, cfg.labelAliases);
     const valueKey = findColumnName(headers, cfg.valueAliases);
+    const fallbackValueKey = findColumnName(headers, cfg.fallbackValueAliases || []);
     const unitKey = findColumnName(headers, cfg.unitAliases);
     const sourceKey = findColumnName(headers, cfg.sourceAliases);
 
     rows.forEach((row) => {
       const label = toText(labelKey ? row[labelKey] : null);
-      const valueText = toText(valueKey ? row[valueKey] : null);
+      const valueText =
+        toText(valueKey ? row[valueKey] : null) || toText(fallbackValueKey ? row[fallbackValueKey] : null);
       if (!label || !valueText) return;
       items.push({
         category: cfg.category,
@@ -431,6 +548,33 @@ async function importSurvey(factors, userId) {
       ])
     );
     const fireworkText = toText(getCell(row, headerIndex, ["Wie oft verwenden Sie Feuerwerk?"]));
+    const shoppingTransportEcoChoiceText = toText(
+      getCell(row, headerIndex, [
+        "Achten Sie beim Kauf darauf, dass Produkte möglichst umweltfreundlich transportiert werden (z. B. Schiff statt Flugzeug)?",
+        "Achten Sie beim Kauf darauf, dass Produkte möglichst umweltfreundlich transportiert werden (z. B. Schiff statt Flugzeug)?",
+      ])
+    );
+    const usesEnergyEfficientAppliancesText = toText(
+      getCell(row, headerIndex, [
+        "Nutzen Sie energiesparende Haushaltsgeräte (z. B. Kühlschrank, Waschmaschine)?",
+        "Nutzen Sie energiesparende Haushaltsgeräte (z. B. Kühlschrank, Waschmaschine)?",
+      ])
+    );
+    const usesSmartDevicesText = toText(
+      getCell(row, headerIndex, [
+        "Nutzen Sie smarte Geräte, die Strom sparen (z.B. programmierbare Thermostate, smarte Waschmaschine)?",
+        "Nutzen Sie smarte Geräte, die Strom sparen (z. B. programmierbare Thermostate, smarte Waschmaschine)?",
+      ])
+    );
+    const buysRegionalProductsText = toText(
+      getCell(row, headerIndex, ["Kaufen Sie gerne Produkte aus der Region oder lokal hergestellte Sachen?"])
+    );
+    const buysSustainableClothingText = toText(
+      getCell(row, headerIndex, ["Achten Sie bei Kleidung auf langlebige oder nachhaltige Materialien?"])
+    );
+    const avoidsOnlineShoppingText = toText(
+      getCell(row, headerIndex, ["Kaufen Sie bewusst weniger online, um Verpackung und Transportweg zu sparen?"])
+    );
     const co2ImportanceText = toText(
       getCell(row, headerIndex, [
         "Wie wichtig ist Ihnen das Thema CO2-Einsparung? (1 sehr wichtig – 6 gar nicht wichtig)",
@@ -463,6 +607,13 @@ async function importSurvey(factors, userId) {
         heatingTypeText,
         warmWaterTypeText,
         usesGreenElectricityText,
+        shoppingTransportEcoChoiceText,
+        usesEnergyEfficientAppliancesText,
+        usesSmartDevicesText,
+        regionalProductsText: buysRegionalProductsText,
+        sustainableClothingText: buysSustainableClothingText,
+        avoidsOnlineShoppingText,
+        fireworkText,
       },
       factors
     );
@@ -489,6 +640,12 @@ async function importSurvey(factors, userId) {
         usesGreenElectricity: usesGreenElectricityText || null,
         smartElectricityUsage: parseAltFreq(smartElectricityUsageText),
         fireworkPerYear: toNumber(fireworkText),
+        shoppingTransportEcoChoice: shoppingTransportEcoChoiceText || null,
+        usesEnergyEfficientAppliances: usesEnergyEfficientAppliancesText || null,
+        usesSmartDevices: usesSmartDevicesText || null,
+        buysRegionalProducts: buysRegionalProductsText || null,
+        buysSustainableClothing: buysSustainableClothingText || null,
+        avoidsOnlineShopping: avoidsOnlineShoppingText || null,
         co2Importance: toNumber(co2ImportanceText),
         totalCo2Kg: Number.isFinite(totalCo2Kg) ? totalCo2Kg : null,
       },

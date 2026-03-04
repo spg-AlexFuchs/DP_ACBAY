@@ -17,6 +17,9 @@ async function getPublicSurveys(req, res) {
         transportMain: true,
         distanceKm: true,
         flightsPerYear: true,
+        heatingType: true,
+        warmWaterType: true,
+        usesGreenElectricity: true,
         totalCo2Kg: true,
       },
     });
@@ -53,6 +56,9 @@ async function getUserSurveys(req, res) {
         transportMain: true,
         distanceKm: true,
         flightsPerYear: true,
+        heatingType: true,
+        warmWaterType: true,
+        usesGreenElectricity: true,
         totalCo2Kg: true,
         user: { select: { email: true, name: true } },
       },
@@ -106,17 +112,25 @@ async function getPublicAggregations(req, res) {
         totalCo2Kg: true,
         createdAt: true,
         flightsPerYear: true,
+        heatingType: true,
+        usesGreenElectricity: true,
       },
     });
 
     const byTransport = {};
+    const co2ByTransport = {};
     const flights = {};
+    const byHeating = {};
+    const byElectricity = {};
     let totalCo2 = 0;
     const byMonth = {};
 
     surveys.forEach((s) => {
       const t = s.transportMain || "UNKNOWN";
       byTransport[t] = (byTransport[t] || 0) + 1;
+      co2ByTransport[t] = co2ByTransport[t] || { sum: 0, count: 0 };
+      co2ByTransport[t].sum += Number(s.totalCo2Kg || 0);
+      co2ByTransport[t].count += 1;
 
       const f = (() => {
         const v = s.flightsPerYear ?? -1;
@@ -126,6 +140,12 @@ async function getPublicAggregations(req, res) {
         return ">5";
       })();
       flights[f] = (flights[f] || 0) + 1;
+
+      const heating = s.heatingType || "UNKNOWN";
+      byHeating[heating] = (byHeating[heating] || 0) + 1;
+
+      const electricity = s.usesGreenElectricity || "UNKNOWN";
+      byElectricity[electricity] = (byElectricity[electricity] || 0) + 1;
 
       totalCo2 += Number(s.totalCo2Kg || 0);
 
@@ -143,6 +163,13 @@ async function getPublicAggregations(req, res) {
     const avgCo2ByMonth = months.map((m) =>
       Number((byMonth[m].sum / byMonth[m].count).toFixed(2))
     );
+    const avgCo2ByTransport = {};
+    Object.keys(co2ByTransport).forEach((key) => {
+      const entry = co2ByTransport[key];
+      avgCo2ByTransport[key] = entry.count
+        ? Number((entry.sum / entry.count).toFixed(2))
+        : 0;
+    });
 
     return res.json({
       count: surveys.length,
@@ -150,7 +177,10 @@ async function getPublicAggregations(req, res) {
         ? Number((totalCo2 / surveys.length).toFixed(2))
         : 0,
       byTransport,
+      avgCo2ByTransport,
       flights,
+      byHeating,
+      byElectricity,
       months,
       avgCo2ByMonth,
     });

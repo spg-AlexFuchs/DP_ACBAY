@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EVN AG | HTMX CO2 Dashboard</title>
+    <title>EVN AG | CO2 Dashboard</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="evn-colors.css" />
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
@@ -156,6 +156,22 @@
                 <canvas id="co2Chart"></canvas>
               </div>
             </article>
+
+            <!-- Heating Chart -->
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Heizungsarten</div>
+              <div class="h-56">
+                <canvas id="heatingChart"></canvas>
+              </div>
+            </article>
+
+            <!-- Electricity Chart -->
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Oekostrom Nutzung</div>
+              <div class="h-56">
+                <canvas id="electricityChart"></canvas>
+              </div>
+            </article>
           </div>
 
           <!-- Hover Info -->
@@ -175,6 +191,9 @@
                   <th class="px-3 py-2">Distanz (km)</th>
                   <th class="px-3 py-2">Transport</th>
                   <th class="px-3 py-2">Flüge/Jahr</th>
+                  <th class="px-3 py-2">Heizung</th>
+                  <th class="px-3 py-2">Warmwasser</th>
+                  <th class="px-3 py-2">Oekostrom</th>
                   <th class="px-3 py-2">CO2 gesamt (kg)</th>
                 </tr>
               </thead>
@@ -185,7 +204,7 @@
                 hx-swap="innerHTML"
               >
                 <tr>
-                  <td colspan="7" class="px-3 py-4 text-center text-slate-500">Lade Daten...</td>
+                  <td colspan="10" class="px-3 py-4 text-center text-slate-500">Lade Daten...</td>
                 </tr>
               </tbody>
             </table>
@@ -254,6 +273,8 @@
       let transportChart;
       let flightChart;
       let co2Chart;
+      let heatingChart;
+      let electricityChart;
 
       // ==========================================
       // Storage Functions
@@ -393,19 +414,25 @@
       }
 
       function renderAggregatedCharts(agg) {
-        // agg: { byTransport: {...}, flights: {...}, months: [...], avgCo2ByMonth: [...] }
+        // agg: { byTransport: {...}, avgCo2ByTransport: {...}, flights: {...} ... }
         const transportLabels = Object.keys(agg.byTransport || {});
         const transportData = transportLabels.map((l) => agg.byTransport[l]);
 
         const flightLabels = Object.keys(agg.flights || {});
         const flightData = flightLabels.map((l) => agg.flights[l]);
 
-        const co2Labels = agg.months || [];
-        const co2Data = agg.avgCo2ByMonth || [];
+        const co2Labels = Object.keys(agg.avgCo2ByTransport || {});
+        const co2Data = co2Labels.map((l) => agg.avgCo2ByTransport[l]);
+        const heatingLabels = Object.keys(agg.byHeating || {});
+        const heatingData = heatingLabels.map((l) => agg.byHeating[l]);
+        const electricityLabels = Object.keys(agg.byElectricity || {});
+        const electricityData = electricityLabels.map((l) => agg.byElectricity[l]);
 
         if (transportChart) transportChart.destroy();
         if (flightChart) flightChart.destroy();
         if (co2Chart) co2Chart.destroy();
+        if (heatingChart) heatingChart.destroy();
+        if (electricityChart) electricityChart.destroy();
 
         transportChart = new Chart(document.getElementById("transportChart"), {
           type: "pie",
@@ -455,12 +482,48 @@
             scales: { x: { ticks: { color: "#334155" } }, y: { beginAtZero: true, ticks: { color: "#334155" } } },
           },
         });
+
+        heatingChart = new Chart(document.getElementById("heatingChart"), {
+          type: "bar",
+          data: {
+            labels: heatingLabels,
+            datasets: [{
+              label: "Anzahl",
+              data: heatingData,
+              backgroundColor: "rgba(15, 118, 110, 0.85)",
+              borderColor: "#0f766e",
+              borderWidth: 1,
+              borderRadius: 8,
+            }],
+          },
+          options: {
+            ...chartOptions((label, value) => `${label}: ${value} Personen`),
+            scales: { x: { ticks: { color: "#334155" } }, y: { beginAtZero: true, ticks: { color: "#334155" } } },
+          },
+        });
+
+        electricityChart = new Chart(document.getElementById("electricityChart"), {
+          type: "doughnut",
+          data: {
+            labels: electricityLabels,
+            datasets: [{
+              data: electricityData,
+              backgroundColor: ["#16a34a", "#0f766e", "#0ea5e9", "#64748b", "#1e293b"],
+              borderColor: "#ffffff",
+              borderWidth: 2,
+              hoverOffset: 20,
+            }],
+          },
+          options: chartOptions((label, value) => `${label}: ${value} Personen`),
+        });
       }
 
       function renderCharts(rows) {
         const transportMap = new Map();
         const flightsMap = new Map();
         const co2Map = new Map();
+        const heatingMap = new Map();
+        const electricityMap = new Map();
 
         rows.forEach((row) => {
           const transport = normalizeTransport(row.transportMain);
@@ -473,6 +536,12 @@
           current.sum += Number(row.totalCo2Kg || 0);
           current.count += 1;
           co2Map.set(transport, current);
+
+          const heating = row.heatingType || "Unbekannt";
+          heatingMap.set(heating, (heatingMap.get(heating) || 0) + 1);
+
+          const electricity = row.usesGreenElectricity || "Keine Angabe";
+          electricityMap.set(electricity, (electricityMap.get(electricity) || 0) + 1);
         });
 
         const transportLabels = [...transportMap.keys()];
@@ -481,10 +550,16 @@
         const flightData = [...flightsMap.values()];
         const co2Labels = [...co2Map.keys()];
         const co2Data = [...co2Map.values()].map((x) => Number((x.sum / x.count).toFixed(1)));
+        const heatingLabels = [...heatingMap.keys()];
+        const heatingData = [...heatingMap.values()];
+        const electricityLabels = [...electricityMap.keys()];
+        const electricityData = [...electricityMap.values()];
 
         if (transportChart) transportChart.destroy();
         if (flightChart) flightChart.destroy();
         if (co2Chart) co2Chart.destroy();
+        if (heatingChart) heatingChart.destroy();
+        if (electricityChart) electricityChart.destroy();
 
         // Transport Chart
         transportChart = new Chart(document.getElementById("transportChart"), {
@@ -546,6 +621,47 @@
               y: { beginAtZero: true, ticks: { color: "#334155" } },
             },
           },
+        });
+
+        heatingChart = new Chart(document.getElementById("heatingChart"), {
+          type: "bar",
+          data: {
+            labels: heatingLabels,
+            datasets: [
+              {
+                label: "Anzahl",
+                data: heatingData,
+                backgroundColor: "rgba(15, 118, 110, 0.85)",
+                borderColor: "#0f766e",
+                borderWidth: 1,
+                borderRadius: 8,
+              },
+            ],
+          },
+          options: {
+            ...chartOptions((label, value) => `${label}: ${value} Personen`),
+            scales: {
+              x: { ticks: { color: "#334155" } },
+              y: { beginAtZero: true, ticks: { color: "#334155" } },
+            },
+          },
+        });
+
+        electricityChart = new Chart(document.getElementById("electricityChart"), {
+          type: "doughnut",
+          data: {
+            labels: electricityLabels,
+            datasets: [
+              {
+                data: electricityData,
+                backgroundColor: ["#16a34a", "#0f766e", "#0ea5e9", "#64748b", "#1e293b"],
+                borderColor: "#ffffff",
+                borderWidth: 2,
+                hoverOffset: 20,
+              },
+            ],
+          },
+          options: chartOptions((label, value) => `${label}: ${value} Personen`),
         });
       }
 
@@ -631,10 +747,18 @@
             try {
               const trigger = JSON.parse(triggerHeader);
               if (trigger.authChanged) {
-                console.log("✅ Auth changed detected:", trigger.authChanged);
-                setToken(trigger.authChanged.token);
-                setRole(trigger.authChanged.role);
+                const token = trigger.authChanged.token;
+                const role = trigger.authChanged.role;
+
+                setToken(token);
+                setRole(role);
                 applyMode();
+
+                if (role === "ADMIN" || role === "SUPER_ADMIN") {
+                  window.location.href = "admin.html";
+                  return;
+                }
+
                 htmx.trigger("body", "refreshDashboard");
                 loadChartData();
               }

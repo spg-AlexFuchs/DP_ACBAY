@@ -17,6 +17,7 @@ const authRoutes = require("./routes/auth.routes");
 const statsRoutes = require("./routes/stats.routes");
 const importRoutes = require("./routes/import.routes");
 const partialsRoutes = require("./routes/partials.routes");
+const adminRoutes = require("./routes/admin.routes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -73,6 +74,7 @@ app.use("/auth", authRoutes);
 app.use("/surveys", statsRoutes);
 app.use("/import", importRoutes);
 app.use("/partials", partialsRoutes);
+app.use("/admin", adminRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
