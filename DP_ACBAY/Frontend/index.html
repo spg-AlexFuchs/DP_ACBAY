@@ -24,18 +24,20 @@
               Verfolgen Sie Ihre CO2-Emissionen und tragen Sie zu einer nachhaltigen Zukunft bei.
             </p>
           </div>
-          <div class="rounded-xl border border-white/20 bg-white/10 px-4 py-3">
-            <div class="text-xs uppercase tracking-wider text-slate-200">Modus</div>
-            <div id="modeLabel" class="mt-1 text-lg font-semibold">Öffentlich</div>
+          <div class="flex flex-col items-end gap-2">
+            <div class="rounded-xl border border-white/20 bg-white/10 px-4 py-3">
+              <div class="text-xs uppercase tracking-wider text-slate-200">Modus</div>
+              <div id="modeLabel" class="mt-1 text-lg font-semibold">Öffentlich</div>
+            </div>
+            <a id="adminLink" href="admin.html" class="hidden text-sm font-medium text-white hover:text-slate-100">
+              Zum Admin-Panel
+            </a>
           </div>
         </div>
       </header>
 
       <div id="topActions" class="mt-4 hidden items-center justify-end gap-3">
-        <a id="adminLink" href="admin.html" class="hidden text-sm font-medium text-red-700 hover:text-red-800">
-          Zum Admin-Panel
-        </a>
-        <button id="logoutBtn" type="button" class="text-sm font-medium text-red-700 hover:text-red-800">
+        <button id="logoutBtn" type="button" class="rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white hover:bg-red-800">
           Logout
         </button>
       </div>
@@ -115,11 +117,6 @@
           <!-- Auth Feedback -->
           <div id="authFeedback" class="mt-3 min-h-5 text-sm"></div>
 
-          <!-- Status Box -->
-          <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div class="text-xs uppercase tracking-wide text-slate-500">Status</div>
-            <div id="sessionText" class="mt-1 text-sm font-medium">Öffentlicher Zugriff aktiv</div>
-          </div>
         </section>
 
         <!-- Dashboard Section -->
@@ -264,7 +261,6 @@
     <script>
       const API_URL = "http://localhost:3000";
       const modeLabel = document.getElementById("modeLabel");
-      const sessionText = document.getElementById("sessionText");
       const topActions = document.getElementById("topActions");
       const logoutBtn = document.getElementById("logoutBtn");
       const adminLink = document.getElementById("adminLink");
@@ -349,7 +345,6 @@
         const adminLoggedIn = privateMode && isAdminRole(role);
 
         modeLabel.textContent = privateMode ? `Eingeloggt (${role || "?"})` : "Öffentlich";
-        sessionText.textContent = privateMode ? "Erweiterte Daten sichtbar" : "Öffentlicher Zugriff aktiv";
         topActions.classList.toggle("hidden", !privateMode);
         topActions.classList.toggle("flex", privateMode);
         adminLink.classList.toggle("hidden", !(privateMode && isAdminRole(role)));
@@ -673,11 +668,6 @@
                 setToken(token);
                 setRole(role);
                 applyMode();
-
-                if (role === "ADMIN" || role === "SUPER_ADMIN") {
-                  window.location.href = "admin.html";
-                  return;
-                }
 
                 htmx.trigger("body", "refreshDashboard");
                 loadChartData();

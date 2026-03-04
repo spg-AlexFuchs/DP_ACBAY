@@ -6,6 +6,8 @@ function bucketFlights(flightsPerYear) {
 	return ">5";
 }
 
+const FLIGHT_BUCKET_ORDER = ["0", "1-2", "2-5", ">5"];
+
 function buildSurveyAggregations(surveys) {
 	const byTransport = {};
 	const co2ByTransport = {};
@@ -56,12 +58,24 @@ function buildSurveyAggregations(surveys) {
 		Number((byMonth[month].sum / byMonth[month].count).toFixed(2))
 	);
 
+	const orderedFlights = {};
+	FLIGHT_BUCKET_ORDER.forEach((bucket) => {
+		if (flights[bucket] !== undefined) {
+			orderedFlights[bucket] = flights[bucket];
+		}
+	});
+	Object.keys(flights).forEach((bucket) => {
+		if (orderedFlights[bucket] === undefined) {
+			orderedFlights[bucket] = flights[bucket];
+		}
+	});
+
 	return {
 		count: surveys.length,
 		avgCo2Kg: surveys.length ? Number((totalCo2 / surveys.length).toFixed(2)) : 0,
 		byTransport,
 		avgCo2ByTransport,
-		flights,
+		flights: orderedFlights,
 		byHeating,
 		byElectricity,
 		months,

@@ -32,6 +32,16 @@ button[type="submit"]:hover {
   background-color: #b91c1c !important;
 }
 
+#logoutBtn {
+  background-color: #dc2626 !important;
+  color: white !important;
+  border: none !important;
+}
+
+#logoutBtn:hover {
+  background-color: #b91c1c !important;
+}
+
 /* Register button */
 button.bg-slate-800,
 button.bg-slate-900 {
