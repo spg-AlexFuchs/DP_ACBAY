@@ -122,8 +122,9 @@ async function registerHx(req, res) {
   const { email, password, name } = req.body;
   if (!email || !password) {
     console.log("❌ Missing email or password");
+    res.setHeader("HX-Trigger", JSON.stringify({ authError: { message: "Email und Passwort sind erforderlich." } }));
     return res
-      .status(400)
+      .status(200)
       .send(
         `<div class="text-sm text-red-700">Email und Passwort sind erforderlich.</div>`
       );
@@ -145,8 +146,9 @@ async function registerHx(req, res) {
   } catch (err) {
     console.error("❌ Register error:", err.message, err.stack);
     const mapped = mapRegisterError(err);
+    res.setHeader("HX-Trigger", JSON.stringify({ authError: { message: mapped.message } }));
     return res
-      .status(mapped.status)
+      .status(200)
       .send(
         `<div class="text-sm text-red-700">${mapped.message}</div>`
       );

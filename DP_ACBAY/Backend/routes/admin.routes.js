@@ -200,7 +200,7 @@ router.get("/partials/audit-logs", async (req, res) => {
   }
 });
 
-router.put("/users/:id/role", async (req, res) => {
+router.put("/users/:id/role", requireRole(ROLE.SUPER_ADMIN), async (req, res) => {
   try {
     const id = Number(req.params.id);
     const role = String(req.body?.role || "");

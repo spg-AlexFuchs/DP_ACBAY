@@ -7,13 +7,13 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-900 flex flex-col has-fixed-footer">
-  <div class="mx-auto max-w-7xl p-6 md:p-10">
+<body class="min-h-screen bg-slate-100 text-slate-900 flex flex-col">
+  <div class="w-full px-6 py-6 md:p-10">
     <header class="rounded-2xl bg-gradient-to-r from-slate-950 via-slate-800 to-emerald-900 p-8 text-white shadow-xl">
       <div class="flex items-start justify-between gap-4">
         <div>
           <div class="inline-flex rounded-full border border-emerald-300/40 bg-emerald-500/20 px-3 py-1 text-xs font-semibold tracking-wide">Admin</div>
-          <h1 class="mt-4 text-3xl font-bold">Admin-Panel</h1>
+          <h1 class="mt-4 text-3xl font-bold text-white">Admin-Panel</h1>
           <p class="mt-2 text-sm text-slate-200">Nur ADMIN und SUPER_ADMIN. Funktionen: Rollen, Datenqualität, Audit, Exporte, Uploads.</p>
         </div>
         <div class="text-right">
@@ -68,9 +68,14 @@
         <h2 class="text-lg font-semibold">Datenvalidierung / Korrektur</h2>
         <p class="mt-1 text-xs text-slate-500">Direkte Korrektur einzelner Survey-Felder.</p>
 
-        <form id="surveyPatchForm" class="mt-4 grid gap-2 md:grid-cols-5">
-          <input id="patchSurveyId" type="number" min="1" placeholder="Survey-ID" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" required />
-          <select id="patchField" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" required>
+        <form id="surveyPatchForm" class="mt-4 flex flex-wrap items-center gap-2">
+          <input
+            id="adminSurveySearch"
+            type="text"
+            placeholder="Survey-ID oder Mitarbeiter suchen"
+            class="min-w-[220px] flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+          <select id="patchField" class="min-w-[170px] rounded-lg border border-slate-300 px-3 py-2 text-sm" required>
             <option value="distanceKm">distanceKm</option>
             <option value="officeDaysPerWeek">officeDaysPerWeek</option>
             <option value="transportMain">transportMain</option>
@@ -78,11 +83,43 @@
             <option value="totalCo2Kg">totalCo2Kg</option>
             <option value="heatingType">heatingType</option>
           </select>
-          <input id="patchValue" type="text" placeholder="Neuer Wert" class="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" required />
-          <button type="submit" class="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-600">Speichern</button>
+          <input id="patchValue" type="text" placeholder="Neuer Wert" class="min-w-[180px] flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" required />
+          <button type="submit" class="w-40 rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-600">Speichern</button>
         </form>
 
+        <div class="mt-2 flex justify-end">
+          <button
+            id="deleteSurveyBtn"
+            type="button"
+            class="w-40 rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white hover:bg-red-800"
+          >
+            Datensatz löschen
+          </button>
+        </div>
+
         <div id="adminMessage" class="mt-3 min-h-[1.25rem] text-sm"></div>
+
+        <div class="mt-3 overflow-y-auto overflow-x-auto rounded-xl border border-slate-200" style="height: 50vh;">
+          <table class="min-w-full text-left text-sm">
+            <thead class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+              <tr>
+                <th class="px-3 py-2">ID</th>
+                <th class="px-3 py-2">Mitarbeiter</th>
+                <th class="px-3 py-2">Arbeitstage</th>
+                <th class="px-3 py-2">Distanz (km)</th>
+                <th class="px-3 py-2">Transport</th>
+                <th class="px-3 py-2">Flüge/Jahr</th>
+                <th class="px-3 py-2">Heizung</th>
+                <th class="px-3 py-2">Warmwasser</th>
+                <th class="px-3 py-2">Ökostrom</th>
+                <th class="px-3 py-2">CO2 gesamt (kg)</th>
+              </tr>
+            </thead>
+            <tbody id="adminSurveyRows" hx-get="http://localhost:3000/partials/surveys/public" hx-trigger="load, adminRefresh from:body" hx-swap="innerHTML">
+              <tr><td colspan="10" class="px-3 py-4 text-center text-slate-500">Lade Daten...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </article>
     </section>
 
@@ -137,6 +174,7 @@
         </div>
       </article>
     </section>
+
   </div>
 
   <script>
@@ -168,16 +206,29 @@
       }
       const me = await res.json();
       whoami.textContent = `${me.email} (${me.role})`;
+      localStorage.setItem("role", me.role || "");
       if (!(me.role === "ADMIN" || me.role === "SUPER_ADMIN")) {
         setMessage("Kein Admin-Zugriff.", true);
         window.location.href = "index.html";
         return false;
       }
+
+      const roleForm = document.getElementById("roleForm");
+      if (me.role !== "SUPER_ADMIN") {
+        roleForm.classList.add("hidden");
+      } else {
+        roleForm.classList.remove("hidden");
+      }
+
       return true;
     }
 
     async function setRole(event) {
       event.preventDefault();
+      const myRole = localStorage.getItem("role");
+      if (myRole !== "SUPER_ADMIN") {
+        return setMessage("Nur SUPER_ADMIN darf Rollen setzen.", true);
+      }
       const userId = document.getElementById("roleUserId").value;
       const role = document.getElementById("roleValue").value;
       const res = await fetch(`${API_URL}/admin/users/${userId}/role`, {
@@ -196,7 +247,18 @@
 
     async function patchSurvey(event) {
       event.preventDefault();
-      const id = document.getElementById("patchSurveyId").value;
+      const visibleRows = Array.from(document.querySelectorAll("#adminSurveyRows tr"))
+        .filter((row) => row.style.display !== "none");
+      if (!visibleRows.length) {
+        return setMessage("Kein passender Datensatz gefunden.", true);
+      }
+
+      const idCell = visibleRows[0].querySelector("td");
+      const id = idCell ? idCell.textContent.trim() : "";
+      if (!id) {
+        return setMessage("Bitte zuerst einen Datensatz über die Suche auswählen.", true);
+      }
+
       const field = document.getElementById("patchField").value;
       const value = document.getElementById("patchValue").value;
       const res = await fetch(`${API_URL}/admin/surveys/${id}`, {
@@ -210,6 +272,33 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) return setMessage(data.error || "Survey-Update fehlgeschlagen", true);
       setMessage(`Survey #${id} aktualisiert (${field}).`);
+      htmx.trigger("body", "adminRefresh");
+    }
+
+    async function deleteSurvey() {
+      const visibleRows = Array.from(document.querySelectorAll("#adminSurveyRows tr"))
+        .filter((row) => row.style.display !== "none");
+      if (!visibleRows.length) {
+        return setMessage("Kein passender Datensatz gefunden.", true);
+      }
+
+      const idCell = visibleRows[0].querySelector("td");
+      const id = idCell ? idCell.textContent.trim() : "";
+      if (!id) {
+        return setMessage("Bitte zuerst einen Datensatz über die Suche auswählen.", true);
+      }
+
+      const confirmed = window.confirm(`Datensatz #${id} wirklich löschen?`);
+      if (!confirmed) return;
+
+      const res = await fetch(`${API_URL}/admin/surveys/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return setMessage(data.error || "Löschen fehlgeschlagen", true);
+
+      setMessage(`Datensatz #${id} wurde gelöscht.`);
       htmx.trigger("body", "adminRefresh");
     }
 
@@ -255,8 +344,40 @@
     }
 
     document.body.addEventListener("htmx:configRequest", ensureAuthHeader);
+    function filterSurveyRowsById() {
+      const term = document.getElementById("adminSurveySearch").value.trim();
+      const termLower = term.toLowerCase();
+      const rows = Array.from(document.querySelectorAll("#adminSurveyRows tr"));
+
+      rows.forEach((row) => {
+        const cells = row.querySelectorAll("td");
+        const firstCell = cells[0];
+        const employeeCell = cells[1];
+        if (!term) {
+          row.style.display = "";
+          return;
+        }
+        if (!firstCell) {
+          row.style.display = "none";
+          return;
+        }
+        const surveyId = firstCell.textContent.trim();
+        const employeeText = employeeCell ? employeeCell.textContent.trim().toLowerCase() : "";
+        const matchId = surveyId === term;
+        const matchEmployee = employeeText.includes(termLower);
+        row.style.display = matchId || matchEmployee ? "" : "none";
+      });
+    }
+
+    document.getElementById("adminSurveySearch").addEventListener("input", filterSurveyRowsById);
+    document.body.addEventListener("htmx:afterSwap", (event) => {
+      if (event.target && event.target.id === "adminSurveyRows") {
+        filterSurveyRowsById();
+      }
+    });
     document.getElementById("roleForm").addEventListener("submit", setRole);
     document.getElementById("surveyPatchForm").addEventListener("submit", patchSurvey);
+    document.getElementById("deleteSurveyBtn").addEventListener("click", deleteSurvey);
     document.getElementById("uploadForm").addEventListener("submit", uploadFile);
     document.getElementById("btnRefresh").addEventListener("click", () => htmx.trigger("body", "adminRefresh"));
     document.getElementById("btnExportCsv").addEventListener("click", () => downloadExport("/admin/export.csv", "surveys.csv"));
@@ -265,5 +386,6 @@
 
     requireAdmin();
   </script>
+
 </body>
 </html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EVN AG | Mein Bereich</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="evn-colors.css" />
+  </head>
+  <body class="min-h-screen bg-white text-slate-900 flex flex-col has-fixed-footer">
+    <div class="w-full flex-1 bg-white px-6 py-6 md:p-10">
+      <header class="rounded-2xl bg-red-700 p-8 text-white shadow-xl">
+        <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div class="inline-flex items-center rounded-full border border-red-300/40 bg-red-500/20 px-3 py-1 text-xs font-semibold tracking-wide">
+              Mein Bereich
+            </div>
+            <h1 class="mt-4 text-3xl font-bold md:text-4xl">Eigene Daten eingeben</h1>
+            <p class="mt-2 text-sm text-slate-200 md:text-base">
+              Eingabemaske für deine persönlichen Angaben. Es werden noch keine Berechnungen ausgeführt.
+            </p>
+          </div>
+          <a href="index.html" class="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-slate-100">
+            Zurück zum Dashboard
+          </a>
+        </div>
+      </header>
+
+      <main class="mt-6">
+        <section class="rounded-2xl bg-white p-5 shadow">
+          <h2 class="text-xl font-semibold">Persönliche Eingabe</h2>
+          <form class="mt-4 grid gap-4 md:grid-cols-2">
+            <label class="text-sm">
+              <span class="mb-1 block font-medium">Arbeitstage pro Woche</span>
+              <input type="number" min="0" max="7" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            </label>
+
+            <label class="text-sm">
+              <span class="mb-1 block font-medium">Distanz zur Arbeit (km)</span>
+              <input type="number" min="0" step="0.1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            </label>
+
+            <label class="text-sm">
+              <span class="mb-1 block font-medium">Hauptverkehrsmittel</span>
+              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option>Auto</option>
+                <option>Öffis</option>
+                <option>Fahrrad</option>
+                <option>Zu Fuß</option>
+                <option>Sonstiges</option>
+              </select>
+            </label>
+
+            <label class="text-sm">
+              <span class="mb-1 block font-medium">Flüge pro Jahr</span>
+              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option>0</option>
+                <option>1-2</option>
+                <option>2-5</option>
+                <option>>5</option>
+              </select>
+            </label>
+
+            <label class="text-sm">
+              <span class="mb-1 block font-medium">Heizungsart</span>
+              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option>Gas</option>
+                <option>Öl</option>
+                <option>Fernwärme</option>
+                <option>Wärmepumpe</option>
+                <option>Andere</option>
+              </select>
+            </label>
+
+            <label class="text-sm">
+              <span class="mb-1 block font-medium">Warmwasser</span>
+              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option>Gas</option>
+                <option>Strom</option>
+                <option>Solar</option>
+                <option>Andere</option>
+              </select>
+            </label>
+
+            <label class="text-sm md:col-span-2">
+              <span class="mb-1 block font-medium">Ökostrom</span>
+              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option>Ja</option>
+                <option>Nein</option>
+              </select>
+            </label>
+
+            <div class="md:col-span-2">
+              <button type="button" class="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800">
+                Speichern
+              </button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer border-t border-slate-300">
+      <div class="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+        <nav class="flex flex-wrap gap-4 text-sm md:gap-6">
+          <a href="impressum.html" class="font-semibold text-slate-700 hover:text-red-700">Impressum</a>
+          <a href="offenlegung.html" class="font-semibold text-slate-700 hover:text-red-700">Offenlegung</a>
+          <a href="datenschutz.html" class="font-semibold text-slate-700 hover:text-red-700">Datenschutz</a>
+          <a href="kontakt.html" class="font-semibold text-slate-700 hover:text-red-700">Kontakt</a>
+          <a href="agb.html" class="font-semibold text-slate-700 hover:text-red-700">AGB</a>
+          <a href="verfuegbarkeit.html" class="font-semibold text-slate-700 hover:text-red-700">Verfügbarkeit</a>
+          <a href="medientransparenz.html" class="font-semibold text-slate-700 hover:text-red-700">Medientransparenz</a>
+          <a href="barrierefreiheit.html" class="font-semibold text-slate-700 hover:text-red-700">Barrierefreiheit</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

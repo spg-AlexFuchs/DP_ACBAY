@@ -28,9 +28,13 @@
             <div class="rounded-xl border border-white/20 bg-white/10 px-4 py-3">
               <div class="text-xs uppercase tracking-wider text-slate-200">Modus</div>
               <div id="modeLabel" class="mt-1 text-lg font-semibold">Öffentlich</div>
+              <div id="modeUser" class="mt-1 text-xs text-slate-200"></div>
             </div>
             <a id="adminLink" href="admin.html" class="hidden text-sm font-medium text-white hover:text-slate-100">
               Zum Admin-Panel
+            </a>
+            <a id="myAreaLink" href="mein-bereich.html" class="hidden text-sm font-medium text-white hover:text-slate-100">
+              Mein Bereich
             </a>
           </div>
         </div>
@@ -181,41 +185,12 @@
             <span id="hoverInfo" class="text-slate-700">Chart-Segment anfahren.</span>
           </div>
 
-          <!-- Data Table -->
-          <div class="mt-5 overflow-x-auto rounded-xl border border-slate-200">
-            <table class="min-w-full text-left text-sm">
-              <thead class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
-                <tr>
-                  <th class="px-3 py-2">ID</th>
-                  <th class="px-3 py-2">Mitarbeiter</th>
-                  <th class="px-3 py-2">Arbeitstage</th>
-                  <th class="px-3 py-2">Distanz (km)</th>
-                  <th class="px-3 py-2">Transport</th>
-                  <th class="px-3 py-2">Flüge/Jahr</th>
-                  <th class="px-3 py-2">Heizung</th>
-                  <th class="px-3 py-2">Warmwasser</th>
-                  <th class="px-3 py-2">Ökostrom</th>
-                  <th class="px-3 py-2">CO2 gesamt (kg)</th>
-                </tr>
-              </thead>
-              <tbody
-                id="surveyRows"
-                hx-get="http://localhost:3000/partials/surveys/public"
-                hx-trigger="load, refreshDashboard from:body"
-                hx-swap="innerHTML"
-              >
-                <tr>
-                  <td colspan="10" class="px-3 py-4 text-center text-slate-500">Lade Daten...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </section>
       </main>
 
       <!-- Footer -->
-      <footer class="site-footer border-t border-slate-300 py-8">
-        <div class="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+      <footer class="site-footer border-t border-slate-300">
+        <div class="flex flex-col justify-between gap-3 md:flex-row md:items-center">
           <!-- Navigation Links -->
           <nav class="flex flex-wrap gap-4 text-sm md:gap-6">
             <a href="impressum.html" class="font-semibold text-slate-700 hover:text-red-700">Impressum</a>
@@ -228,29 +203,6 @@
             <a href="barrierefreiheit.html" class="font-semibold text-slate-700 hover:text-red-700">Barrierefreiheit</a>
           </nav>
 
-          <!-- Social Media Icons -->
-          <div class="flex justify-end gap-4">
-            <a href="#" class="text-slate-500 hover:text-red-700" title="YouTube">
-              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19.615 3.175c-3.673-1.104-11.558-1.104-15.231 0-4.083 1.227-4.823 5.686-4.88 15.825.058 10.14.797 14.598 4.88 15.825 3.673 1.104 11.558 1.104 15.231 0 4.083-1.227 4.823-5.686 4.88-15.825-.058-10.14-.797-14.598-4.88-15.825zm-10.615 12.582v8.756h-2.594v-20.151h2.594v2.404c.674-.1 1.38-.204 2.209-.204 2.28 0 4.585.914 4.585 3.079v2.294c0 2.165-2.305 3.079-4.585 3.079-.829 0-1.535-.104-2.209-.204v9.747z"></path>
-              </svg>
-            </a>
-            <a href="#" class="text-slate-500 hover:text-red-700" title="Facebook">
-              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path>
-              </svg>
-            </a>
-            <a href="#" class="text-slate-500 hover:text-red-700" title="LinkedIn">
-              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"></path>
-              </svg>
-            </a>
-            <a href="#" class="text-slate-500 hover:text-red-700" title="Instagram">
-              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0m5.521 12.912c.142 2.818-2.145 5.253-5.021 5.253-2.877 0-5.196-2.435-5.021-5.253-.032-.645.063-1.282.282-1.896H5.896v4.811c0 .955.777 1.732 1.732 1.732h8.744c.955 0 1.732-.777 1.732-1.732v-4.811h-1.063c.219.614.314 1.251.282 1.896zM12 4.865c3.045 0 5.54 2.495 5.54 5.54 0 3.045-2.495 5.54-5.54 5.54s-5.54-2.495-5.54-5.54c0-3.045 2.495-5.54 5.54-5.54z"></path>
-              </svg>
-            </a>
-          </div>
         </div>
       </footer>
     </div>
@@ -261,9 +213,11 @@
     <script>
       const API_URL = "http://localhost:3000";
       const modeLabel = document.getElementById("modeLabel");
+      const modeUser = document.getElementById("modeUser");
       const topActions = document.getElementById("topActions");
       const logoutBtn = document.getElementById("logoutBtn");
       const adminLink = document.getElementById("adminLink");
+      const myAreaLink = document.getElementById("myAreaLink");
       const toggleAuth = document.getElementById("toggleAuth");
       const authTitle = document.getElementById("authTitle");
       const loginForm = document.getElementById("loginForm");
@@ -273,9 +227,10 @@
       const registerPasswordInput = registerForm.querySelector('input[name="password"]');
       const authPanel = document.getElementById("authPanel");
       const dashboardSection = document.getElementById("dashboardSection");
-      const surveyRows = document.getElementById("surveyRows");
       const summaryGrid = document.getElementById("summaryGrid");
       const hoverInfo = document.getElementById("hoverInfo");
+      let liveRole = null;
+      let liveEmail = null;
 
       let transportChart;
       let flightChart;
@@ -304,6 +259,7 @@
         } else {
           localStorage.removeItem("role");
         }
+        liveRole = role || null;
       }
 
       function getRole() {
@@ -328,9 +284,7 @@
       }
 
       function updateAuthFormsVisibility(privateMode, role) {
-        const isAdminLoggedIn = privateMode && isAdminRole(role);
-
-        if (isAdminLoggedIn) {
+        if (privateMode) {
           loginForm.classList.add("hidden");
           registerForm.classList.add("hidden");
           toggleAuth.classList.add("hidden");
@@ -349,26 +303,59 @@
 
       function applyMode() {
         const privateMode = isPrivateMode();
-        const role = getRole();
-        const adminLoggedIn = privateMode && isAdminRole(role);
+        const role = privateMode ? (liveRole || getRole()) : null;
+        const isAdmin = isAdminRole(role);
+        const isEmployee = privateMode && role === "EMPLOYEE";
 
         modeLabel.textContent = privateMode ? `Eingeloggt (${role || "?"})` : "Öffentlich";
+        modeUser.textContent = privateMode ? (liveEmail || "") : "";
         topActions.classList.toggle("hidden", !privateMode);
         topActions.classList.toggle("flex", privateMode);
-        adminLink.classList.toggle("hidden", !(privateMode && isAdminRole(role)));
+        adminLink.classList.toggle("hidden", !(privateMode && isAdmin));
+        myAreaLink.classList.toggle("hidden", !isEmployee);
         updateAuthFormsVisibility(privateMode, role);
 
-        authPanel.classList.toggle("hidden", adminLoggedIn);
-        dashboardSection.style.gridColumn = adminLoggedIn ? "1 / -1" : "";
+        authPanel.classList.toggle("hidden", privateMode);
+        dashboardSection.style.gridColumn = privateMode ? "1 / -1" : "";
 
-        surveyRows.setAttribute(
-          "hx-get",
-          privateMode ? `${API_URL}/partials/surveys/private` : `${API_URL}/partials/surveys/public`
-        );
         summaryGrid.setAttribute(
           "hx-get",
-          privateMode ? `${API_URL}/partials/summary/private` : `${API_URL}/partials/summary/public`
+          `${API_URL}/partials/summary/public`
         );
+      }
+
+      async function refreshAuthFromServer() {
+        const token = getToken();
+        if (!token) {
+          setRole(null);
+          liveEmail = null;
+          return null;
+        }
+
+        try {
+          const res = await fetch(`${API_URL}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!res.ok) {
+            setToken(null);
+            setRole(null);
+            liveEmail = null;
+            return null;
+          }
+
+          const me = await res.json();
+          setRole(me.role || null);
+          liveEmail = me.email || null;
+          return me;
+        } catch (_error) {
+          return null;
+        }
+      }
+
+      async function syncRoleAndApplyMode() {
+        await refreshAuthFromServer();
+        applyMode();
       }
 
       // ==========================================
@@ -402,16 +389,8 @@
       }
 
       async function loadChartData() {
-        const privateMode = isPrivateMode();
-        const headers = {};
-        if (privateMode) headers.Authorization = `Bearer ${getToken()}`;
-
         try {
-          const endpoint = privateMode
-            ? `${API_URL}/surveys/aggregations/private`
-            : `${API_URL}/public/aggregations`;
-
-          const res = await fetch(endpoint, { headers });
+          const res = await fetch(`${API_URL}/public/aggregations`);
           if (!res.ok) {
             if (res.status === 401) {
               setToken(null);
@@ -580,6 +559,7 @@
       logoutBtn.addEventListener("click", () => {
         setToken(null);
         setRole(null);
+        liveEmail = null;
         applyMode();
         htmx.trigger("body", "refreshDashboard");
         loadChartData();
@@ -655,6 +635,10 @@
         if (event.detail?.elt?.id === "loginForm") {
           showAuthErrorFromXhr(event.detail.xhr);
         }
+
+        if (event.detail?.elt?.id === "registerForm") {
+          showAuthErrorFromXhr(event.detail.xhr);
+        }
       });
 
       document.body.addEventListener("htmx:responseError", (event) => {
@@ -688,7 +672,7 @@
           }
         }
         
-        if (event.target.id === "surveyRows" || event.target.id === "summaryGrid") {
+        if (event.target.id === "summaryGrid") {
           loadChartData();
         }
       });
@@ -696,9 +680,21 @@
       // ==========================================
       // Initialize
       // ==========================================
-      syncAuthTitle();
-      applyMode();
-      loadChartData();
+      async function initializeApp() {
+        syncAuthTitle();
+        await syncRoleAndApplyMode();
+        loadChartData();
+      }
+
+      initializeApp();
+
+      setInterval(syncRoleAndApplyMode, 20000);
+      window.addEventListener("focus", syncRoleAndApplyMode);
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+          syncRoleAndApplyMode();
+        }
+      });
 
       // load emission factors for potential frontend use
       let emissionFactors = [];

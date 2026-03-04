@@ -12,7 +12,9 @@
   },
   "scripts": {
     "import:excel": "node services/import/import-excel.js",
-    "dev": "node server.js",
+    "dev": "concurrently -k -n server,css -c green,cyan \"npm run dev:server\" \"npm run dev:css\"",
+    "dev:server": "node server.js",
+    "dev:css": "tailwindcss -c ../Frontend/tailwind.config.cjs -i ../Frontend/tailwind.input.css -o ../Frontend/style.css --watch",
     "serve:frontend": "node static-server.js",
     "verify": "node scripts/verify-endpoints.js",
     "prisma:generate": "prisma generate",
@@ -20,6 +22,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.24",
+    "concurrently": "^9.0.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17"
   }
