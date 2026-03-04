@@ -28,6 +28,46 @@ function canManageRole(actorRole, nextRole) {
   return false;
 }
 
+function normalizeSurveyPatch(body) {
+  const allowedFields = new Set([
+    "distanceKm",
+    "officeDaysPerWeek",
+    "transportMain",
+    "flightsPerYear",
+    "totalCo2Kg",
+    "heatingType",
+  ]);
+
+  const entries = Object.entries(body || {}).filter(([key]) => allowedFields.has(key));
+  if (entries.length !== 1) {
+    return { error: "Genau ein erlaubtes Feld muss gesetzt werden" };
+  }
+
+  const [field, rawValue] = entries[0];
+  const valueAsString = String(rawValue ?? "").trim();
+  if (!valueAsString) {
+    return { error: "Wert darf nicht leer sein" };
+  }
+
+  if (field === "distanceKm" || field === "totalCo2Kg") {
+    const value = Number(valueAsString);
+    if (!Number.isFinite(value)) {
+      return { error: `${field} muss eine Zahl sein` };
+    }
+    return { field, value };
+  }
+
+  if (field === "officeDaysPerWeek" || field === "flightsPerYear") {
+    const value = Number.parseInt(valueAsString, 10);
+    if (!Number.isInteger(value)) {
+      return { error: `${field} muss eine ganze Zahl sein` };
+    }
+    return { field, value };
+  }
+
+  return { field, value: valueAsString };
+}
+
 function parseIp(req) {
   return (
     req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
@@ -207,20 +247,16 @@ router.put("/users/:id/role", async (req, res) => {
 router.patch("/surveys/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const allowed = [
-      "distanceKm",
-      "officeDaysPerWeek",
-      "transportMain",
-      "flightsPerYear",
-      "totalCo2Kg",
-      "heatingType",
-    ];
-    const entries = Object.entries(req.body || {}).filter(([k]) => allowed.includes(k));
-    if (!id || entries.length !== 1) {
+    if (!id) {
       return res.status(400).json({ error: "Ungueltige Daten" });
     }
 
-    const [field, value] = entries[0];
+    const parsed = normalizeSurveyPatch(req.body);
+    if (parsed.error) {
+      return res.status(400).json({ error: parsed.error });
+    }
+
+    const { field, value } = parsed;
     const before = await prisma.survey.findUnique({ where: { id } });
     if (!before) return res.status(404).json({ error: "Survey nicht gefunden" });
 

@@ -194,17 +194,11 @@
       htmx.trigger("body", "adminRefresh");
     }
 
-    function castValue(field, raw) {
-      if (["distanceKm", "totalCo2Kg"].includes(field)) return Number(raw);
-      if (["officeDaysPerWeek", "flightsPerYear"].includes(field)) return parseInt(raw, 10);
-      return raw;
-    }
-
     async function patchSurvey(event) {
       event.preventDefault();
       const id = document.getElementById("patchSurveyId").value;
       const field = document.getElementById("patchField").value;
-      const value = castValue(field, document.getElementById("patchValue").value);
+      const value = document.getElementById("patchValue").value;
       const res = await fetch(`${API_URL}/admin/surveys/${id}`, {
         method: "PATCH",
         headers: {
