@@ -194,9 +194,9 @@
                 <label class="text-sm">
                   <span class="mb-1 block font-medium text-slate-700">Nutzen Sie Strom bewusst zu Zeiten, in denen viel erneuerbare Energie verfügbar ist?</span>
                   <select name="smartElectricityUsage" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <option value="1">Ja, oft</option>
-                    <option value="0.5">Selten</option>
-                    <option value="0">Nein, nie</option>
+                    <option value="Ja, oft">Ja, oft</option>
+                    <option value="Selten">Selten</option>
+                    <option value="Nein, nie">Nein, nie</option>
                   </select>
                 </label>
               </div>
@@ -265,9 +265,15 @@
             </div>
 
             <div>
-              <button type="button" class="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800">
-                Umfragewerte speichern
-              </button>
+              <div class="flex flex-wrap items-center gap-2">
+                <button id="editSurveyBtn" type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">
+                  Bearbeiten
+                </button>
+                <button id="saveSurveyBtn" type="submit" class="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50" disabled>
+                  Umfragewerte speichern
+                </button>
+              </div>
+              <p id="surveyMessage" class="mt-3 min-h-[1.25rem] text-sm text-slate-600"></p>
             </div>
           </form>
         </section>
@@ -284,5 +290,241 @@
         </nav>
       </div>
     </footer>
+
+    <script>
+      const API_URL = "http://localhost:3000";
+      const token = localStorage.getItem("token");
+      const form = document.getElementById("surveyForm");
+      const messageEl = document.getElementById("surveyMessage");
+      const editBtn = document.getElementById("editSurveyBtn");
+      const saveBtn = document.getElementById("saveSurveyBtn");
+
+      function setMessage(text, isError = false) {
+        messageEl.textContent = text;
+        messageEl.className = isError
+          ? "mt-3 min-h-[1.25rem] text-sm text-red-700"
+          : "mt-3 min-h-[1.25rem] text-sm text-emerald-700";
+      }
+
+      function setFormLocked(isLocked) {
+        const fields = form.querySelectorAll("input, select, textarea");
+        fields.forEach((field) => {
+          field.disabled = isLocked;
+        });
+        saveBtn.disabled = isLocked;
+      }
+
+      function setSelectByPreferred(selectName, preferredValues = []) {
+        const select = form.elements[selectName];
+        if (!select) return;
+
+        const options = Array.from(select.options);
+        const lowerValueMap = new Map(
+          options.map((option) => [String(option.value || "").trim().toLowerCase(), option.value])
+        );
+
+        for (const preferred of preferredValues) {
+          if (preferred === null || preferred === undefined) continue;
+          const needle = String(preferred).trim().toLowerCase();
+          if (lowerValueMap.has(needle)) {
+            select.value = lowerValueMap.get(needle);
+            return;
+          }
+        }
+      }
+
+      function mapDistanceToOption(distanceKm) {
+        const d = Number(distanceKm);
+        if (!Number.isFinite(d)) return "";
+        if (d < 10) return "unter10";
+        if (d < 20) return "10-20";
+        if (d < 30) return "20-30";
+        if (d < 50) return "40-50";
+        if (d < 60) return "50-60";
+        return "uber60";
+      }
+
+      function mapFlightsToOption(flightsPerYear) {
+        const f = Number(flightsPerYear);
+        if (!Number.isFinite(f) || f <= 0) return "0";
+        if (f <= 2) return "1-2";
+        if (f <= 5) return "2-5";
+        return "5-10";
+      }
+
+      function mapFlightDistanceToOption(flightDistanceKm) {
+        const d = Number(flightDistanceKm);
+        if (!Number.isFinite(d)) return "";
+        if (d < 1500) return "Kurzstrecke";
+        if (d <= 3500) return "Mittelstrecke";
+        return "Langstrecke";
+      }
+
+      function mapSmartUsageToOption(smartUsage) {
+        const n = Number(smartUsage);
+        if (!Number.isFinite(n)) return "";
+        if (n >= 0.3) return "Ja, oft";
+        if (n >= 0.05) return "Selten";
+        return "Nein, nie";
+      }
+
+      function applySurveyToForm(survey) {
+        if (!survey) return;
+
+        setSelectByPreferred("officeDaysPerWeek", [survey.officeDaysPerWeek]);
+        setSelectByPreferred("distanceKm", [mapDistanceToOption(survey.distanceKm)]);
+
+        setSelectByPreferred("transportMain", [
+          survey.transportMain,
+          survey.transportMain?.includes("ÖPNV") ? "Öffentliche Verkehrsmittel" : null,
+          survey.transportMain?.includes("Zu Fuß") ? "Zu Fuß" : null,
+          survey.transportMain?.includes("Fahrrad") ? "Fahrrad" : null,
+          survey.transportMain?.includes("E-Bike") || survey.transportMain?.includes("Roller") ? "E-Roller" : null,
+          survey.transportMain?.includes("PKW") ? "Eigenes Auto" : null,
+        ]);
+
+        setSelectByPreferred("carType", [
+          survey.carType,
+          survey.carType?.includes("Benzin") ? "Benzin" : null,
+          survey.carType?.includes("Diesel") ? "Diesel" : null,
+          survey.carType?.includes("Hybrid") ? "Hybrid" : null,
+          survey.carType?.includes("Elektro") ? "Elektro" : null,
+          survey.carType?.includes("Gas") ? "Gas" : null,
+          survey.carType?.includes("Flüssiggas") ? "Flüssiggas" : null,
+          survey.carType?.includes("Wasserstoff") ? "Wasserstoff" : null,
+          !survey.carType ? "Ich benutze kein Auto." : null,
+        ]);
+
+        setSelectByPreferred("alternativeTransportFreq", [
+          Number(survey.alternativeTransportFreq) >= 0.32 ? "Ja, oft" : null,
+          Number(survey.alternativeTransportFreq) >= 0.03 ? "Manchmal" : null,
+          Number(survey.alternativeTransportFreq) > 0 ? "Selten" : null,
+          Number(survey.alternativeTransportFreq) === 0 ? "Nie" : null,
+        ]);
+
+        setSelectByPreferred("alternativeTransport", [
+          survey.alternativeTransport,
+          survey.alternativeTransport?.includes("ÖPNV") ? "Öffentliche Verkehrsmittel" : null,
+          survey.alternativeTransport?.includes("Zu Fuß") ? "Zu Fuß" : null,
+          survey.alternativeTransport?.includes("Fahrrad") ? "Fahrrad" : null,
+          survey.alternativeTransport?.includes("E-Bike") || survey.alternativeTransport?.includes("Roller") ? "E-Roller" : null,
+        ]);
+
+        setSelectByPreferred("flightsPerYear", [mapFlightsToOption(survey.flightsPerYear)]);
+        setSelectByPreferred("flightDistance", [mapFlightDistanceToOption(survey.flightDistanceKm)]);
+        setSelectByPreferred("heatingType", [
+          survey.heatingType,
+          survey.heatingType?.includes("Wärmepumpe") ? "Wärmepumpe" : null,
+          survey.heatingType?.includes("Erdgas") ? "Gas" : null,
+          survey.heatingType?.includes("Heizöl") ? "Öl" : null,
+          survey.heatingType?.includes("Pellets") ? "Pellets" : null,
+          survey.heatingType?.includes("Holz") ? "Holzofen" : null,
+          survey.heatingType?.includes("Fernwärme") ? "Fernwärme" : null,
+          survey.heatingType?.includes("Sonstiges") ? "Sonstiges" : null,
+        ]);
+
+        setSelectByPreferred("warmWaterType", [
+          survey.warmWaterType,
+          survey.warmWaterType?.includes("Strom") ? "Strom" : null,
+          survey.warmWaterType?.includes("Erdgas") ? "Gas" : null,
+          survey.warmWaterType?.includes("Wärmepumpe") ? "Wärmepumpe" : null,
+          survey.warmWaterType?.includes("Solar") ? "Solarthermie" : null,
+          survey.warmWaterType?.includes("Sonstiges") ? "Sonstiges" : null,
+        ]);
+
+        setSelectByPreferred("usesGreenElectricity", [survey.usesGreenElectricity]);
+        setSelectByPreferred("smartElectricityUsage", [mapSmartUsageToOption(survey.smartElectricityUsage)]);
+
+        setSelectByPreferred("fireworkPerYear", [
+          Number(survey.fireworkPerYear) <= 0 ? "Nie" : null,
+          Number(survey.fireworkPerYear) === 1 ? "1 mal im Jahr" : null,
+          Number(survey.fireworkPerYear) > 1 ? "Öfter als einmal im Jahr" : null,
+        ]);
+
+        setSelectByPreferred("shoppingTransportEcoChoice", [survey.shoppingTransportEcoChoice]);
+        setSelectByPreferred("usesEnergyEfficientAppliances", [survey.usesEnergyEfficientAppliances]);
+        setSelectByPreferred("usesSmartDevices", [survey.usesSmartDevices]);
+        setSelectByPreferred("buysRegionalProducts", [survey.buysRegionalProducts]);
+        setSelectByPreferred("buysSustainableClothing", [survey.buysSustainableClothing]);
+        setSelectByPreferred("avoidsOnlineShopping", [survey.avoidsOnlineShopping]);
+      }
+
+      async function loadMySurvey() {
+        if (!token) {
+          setMessage("Bitte zuerst einloggen, um Umfragewerte speichern zu können.", true);
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_URL}/surveys/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const rows = await response.json().catch(() => []);
+          if (!response.ok) {
+            setMessage("Umfragewerte konnten nicht geladen werden.", true);
+            return;
+          }
+
+          if (Array.isArray(rows) && rows.length > 0) {
+            applySurveyToForm(rows[0]);
+            setMessage("Vorhandene Umfragewerte geladen. Mit 'Bearbeiten' können Sie Änderungen vornehmen.");
+          } else {
+            setMessage("Noch keine gespeicherten Umfragewerte. Mit 'Bearbeiten' können Sie neue Werte eingeben.");
+          }
+        } catch (_error) {
+          setMessage("Server nicht erreichbar. Bitte später erneut versuchen.", true);
+        }
+      }
+
+      editBtn.addEventListener("click", () => {
+        if (!token) {
+          setMessage("Nicht eingeloggt. Bitte zuerst anmelden.", true);
+          return;
+        }
+        setFormLocked(false);
+        setMessage("Bearbeitungsmodus aktiv. Änderungen mit 'Umfragewerte speichern' sichern.");
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (!token) {
+          setMessage("Nicht eingeloggt. Bitte zuerst anmelden.", true);
+          return;
+        }
+
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+
+        try {
+          const response = await fetch(`${API_URL}/surveys/me`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            setMessage(data.error || "Speichern fehlgeschlagen.", true);
+            return;
+          }
+
+          const mode = data.updated ? "aktualisiert" : "neu gespeichert";
+          const co2 = Number.isFinite(Number(data.totalCo2Kg))
+            ? ` (CO2: ${Number(data.totalCo2Kg).toFixed(2)} kg)`
+            : "";
+          setMessage(`Umfrage erfolgreich ${mode}.${co2}`);
+          setFormLocked(true);
+        } catch (_error) {
+          setMessage("Server nicht erreichbar. Bitte später erneut versuchen.", true);
+        }
+      });
+
+      setFormLocked(true);
+      loadMySurvey();
+    </script>
   </body>
 </html>

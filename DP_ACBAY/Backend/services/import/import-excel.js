@@ -5,8 +5,9 @@ const calc = require("../calculation.service");
 
 const prisma = new PrismaClient();
 
-const EMISSION_FILE = path.join("data", "emissionen_nach_typ.xlsx");
-const SURVEY_FILE = path.join("data", "auswertung_umfrage.xlsx");
+const DATA_DIR = path.resolve(__dirname, "..", "..", "data");
+const EMISSION_FILE = path.join(DATA_DIR, "emissionen_nach_typ.xlsx");
+const SURVEY_FILE = path.join(DATA_DIR, "auswertung_umfrage.xlsx");
 
 function toText(value) {
   if (value === null || value === undefined) return null;
