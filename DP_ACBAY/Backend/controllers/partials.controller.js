@@ -54,10 +54,11 @@ function surveyRowsHtml(surveys, rowClass, co2Class) {
   return surveys
     .map((s) => {
       const idStr = String(s.id).substring(0, 8);
+      const mitarbeiter = s.mitarbeiter || s.user?.email || "—";
       return `
       <tr class="border-b border-slate-200 ${rowClass}">
         <td class="px-3 py-2">${idStr}</td>
-        <td class="px-3 py-2">—</td>
+        <td class="px-3 py-2">${normalizeCell(mitarbeiter)}</td>
         <td class="px-3 py-2">${normalizeCell(s.officeDaysPerWeek)}</td>
         <td class="px-3 py-2">${normalizeCell(s.distanceKm)}</td>
         <td class="px-3 py-2">${normalizeCell(s.transportMain)}</td>
@@ -145,6 +146,7 @@ async function getPublicSurveys(req, res) {
     const surveys = await prisma.survey.findMany({
       select: {
         id: true,
+        mitarbeiter: true,
         officeDaysPerWeek: true,
         distanceKm: true,
         transportMain: true,
@@ -153,6 +155,7 @@ async function getPublicSurveys(req, res) {
         warmWaterType: true,
         usesGreenElectricity: true,
         totalCo2Kg: true,
+        user: { select: { email: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -178,6 +181,7 @@ async function getPrivateSurveys(req, res) {
       where: req.authUser.role === ROLE.EMPLOYEE ? { userId: req.authUser.id } : {},
       select: {
         id: true,
+        mitarbeiter: true,
         officeDaysPerWeek: true,
         distanceKm: true,
         transportMain: true,
@@ -186,6 +190,7 @@ async function getPrivateSurveys(req, res) {
         warmWaterType: true,
         usesGreenElectricity: true,
         totalCo2Kg: true,
+        user: { select: { email: true } },
       },
       orderBy: { createdAt: "desc" },
     });

@@ -1,9 +1,19 @@
 const {
 	computeCommuteKgFromSurveyRecord,
 	computeSurveyComponentKgFromRecord,
+	mapHeatingType,
+	mapHeatingTypes,
+	mapWarmWaterType,
+	mapWarmWaterTypes,
 } = require("./calculation.service");
 
 function bucketFlights(flightsPerYear) {
+	const text = String(flightsPerYear ?? "").toLowerCase();
+	if (text.includes("nie") || text === "0") return "0";
+	if (text.includes("1-2")) return "1-2";
+	if (text.includes("2-5")) return "2-5";
+	if (text.includes("5-10")) return "5-10";
+
 	const value = Number(flightsPerYear ?? -1);
 	if (!Number.isFinite(value) || value <= 0) return "0";
 	if (value <= 2) return "1-2";
@@ -12,6 +22,11 @@ function bucketFlights(flightsPerYear) {
 }
 
 function flightDistanceBucket(flightDistanceKm) {
+	const text = String(flightDistanceKm ?? "").toLowerCase();
+	if (text.includes("kurzstrecke")) return "Kurzstrecke";
+	if (text.includes("mittelstrecke")) return "Mittelstrecke";
+	if (text.includes("langstrecke")) return "Langstrecke";
+
 	const distance = Number(flightDistanceKm);
 	if (!Number.isFinite(distance)) return null;
 	if (distance < 1500) return "Kurzstrecke";
@@ -57,7 +72,8 @@ function buildSurveyAggregations(surveys, factors = []) {
 		const flightCountBucket = bucketFlights(survey.flightsPerYear);
 		flights[flightCountBucket] = (flights[flightCountBucket] || 0) + 1;
 
-		const flightDistanceGroup = Number(survey.flightsPerYear || 0) > 0
+		const hasFlights = bucketFlights(survey.flightsPerYear) !== "0";
+		const flightDistanceGroup = hasFlights
 			? flightDistanceBucket(survey.flightDistanceKm)
 			: null;
 
@@ -76,32 +92,30 @@ function buildSurveyAggregations(surveys, factors = []) {
 			co2ByFlights[flightDistanceGroup].count += 1;
 		}
 
-		const heating = survey.heatingType || "UNKNOWN";
-		const heatingParts = String(heating)
-			.split(/\s*\+\s*/)
-			.map((part) => part.trim())
-			.filter(Boolean);
+		const heatingParts = mapHeatingTypes(survey.heatingType);
+		const resolvedHeatingParts = heatingParts.length
+			? heatingParts
+			: [mapHeatingType(survey.heatingType) || "UNKNOWN"];
 
-		if (heatingParts.length > 1) {
-			const heatingShareKg = Number(components.heatingKg || 0) / heatingParts.length;
-			heatingParts.forEach((part) => {
-				byHeating[part] = (byHeating[part] || 0) + 1;
-				co2ByHeating[part] = co2ByHeating[part] || { sum: 0, count: 0 };
-				co2ByHeating[part].sum += heatingShareKg;
-				co2ByHeating[part].count += 1;
-			});
-		} else {
-			byHeating[heating] = (byHeating[heating] || 0) + 1;
-			co2ByHeating[heating] = co2ByHeating[heating] || { sum: 0, count: 0 };
-			co2ByHeating[heating].sum += Number(components.heatingKg || 0);
-			co2ByHeating[heating].count += 1;
-		}
+		const heatingShareKg = Number(components.heatingKg || 0) / resolvedHeatingParts.length;
+		resolvedHeatingParts.forEach((part) => {
+			byHeating[part] = (byHeating[part] || 0) + 1;
+			co2ByHeating[part] = co2ByHeating[part] || { sum: 0, count: 0 };
+			co2ByHeating[part].sum += heatingShareKg;
+			co2ByHeating[part].count += 1;
+		});
 
-		const warmWater = survey.warmWaterType || "UNKNOWN";
-		byWarmWater[warmWater] = (byWarmWater[warmWater] || 0) + 1;
-		co2ByWarmWater[warmWater] = co2ByWarmWater[warmWater] || { sum: 0, count: 0 };
-		co2ByWarmWater[warmWater].sum += Number(components.warmWaterKg || 0);
-		co2ByWarmWater[warmWater].count += 1;
+		const warmWaterParts = mapWarmWaterTypes(survey.warmWaterType);
+		const resolvedWarmWaterParts = warmWaterParts.length
+			? warmWaterParts
+			: [mapWarmWaterType(survey.warmWaterType) || "UNKNOWN"];
+		const warmWaterShareKg = Number(components.warmWaterKg || 0) / resolvedWarmWaterParts.length;
+		resolvedWarmWaterParts.forEach((part) => {
+			byWarmWater[part] = (byWarmWater[part] || 0) + 1;
+			co2ByWarmWater[part] = co2ByWarmWater[part] || { sum: 0, count: 0 };
+			co2ByWarmWater[part].sum += warmWaterShareKg;
+			co2ByWarmWater[part].count += 1;
+		});
 
 		const electricity = survey.usesGreenElectricity || "UNKNOWN";
 		byElectricity[electricity] = (byElectricity[electricity] || 0) + 1;

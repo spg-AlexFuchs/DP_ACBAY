@@ -34,28 +34,29 @@ model Survey {
 
   userId Int
   user   User @relation(fields: [userId], references: [id])
+  mitarbeiter String?
 
   // ===== Mobilität =====
   officeDaysPerWeek        Int
   transportMain            String // z.B. "CAR_PRIVATE"
-  alternativeTransportFreq Float? // 0.33, 0.1, 0.03, 0
+  alternativeTransportFreq String?
   alternativeTransport     String? // z.B. "BIKE"
   distanceKm               Float
 
   carType String? // "PETROL", "ELECTRIC", etc.
 
   // ===== Flug =====
-  flightsPerYear   Int? // z.B. 0, 2, 5
-  flightDistanceKm Float? // 750, 2500, 5000
+  flightsPerYear   String?
+  flightDistanceKm String?
 
   // ===== Wohnen =====
   heatingType           String // "GAS", "HEAT_PUMP", etc.
   warmWaterType         String // "GAS", "ELECTRICITY"
   usesGreenElectricity  String? // "YES", "NO", "PARTLY"
-  smartElectricityUsage Float? // 1 = oft, 0.2 = selten, 0 = nie
+  smartElectricityUsage String?
 
   // ===== Verhalten =====
-  fireworkPerYear Int? // 0,1,2
+  fireworkPerYear String?
   co2Importance   Int? // 1-6
   shoppingTransportEcoChoice String?
   usesEnergyEfficientAppliances String?

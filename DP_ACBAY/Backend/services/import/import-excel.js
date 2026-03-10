@@ -178,6 +178,10 @@ async function importSurvey(factors, userId) {
   }
 
   const headerIndex = buildHeaderIndex(rows);
+  const importUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
   await prisma.survey.deleteMany();
 
   for (const row of rows) {
@@ -265,14 +269,6 @@ async function importSurvey(factors, userId) {
       ])
     );
 
-    const mappedTransport =
-      calc.resolveMainTransportLabel(transportMainText, carTypeText) || toText(transportMainText) || "UNKNOWN";
-    const mappedHeatingTypes = calc.mapHeatingTypes(heatingTypeText);
-    const mappedHeating = mappedHeatingTypes.length
-      ? mappedHeatingTypes.join(" + ")
-      : (calc.mapHeatingType(heatingTypeText) || toText(heatingTypeText) || "UNKNOWN");
-    const mappedWarmWater = calc.mapWarmWaterType(warmWaterTypeText) || (warmWaterTypeText ? "Sonstiges" : "UNKNOWN");
-
     const totalCo2Kg = calc.computeSurveyTotal(
       {
         officeDaysText,
@@ -304,19 +300,20 @@ async function importSurvey(factors, userId) {
     await prisma.survey.create({
       data: {
         userId,
+        mitarbeiter: importUser?.email || null,
         officeDaysPerWeek: calc.parseOfficeDays(officeDaysText),
-        transportMain: mappedTransport,
-        alternativeTransportFreq: calc.parseAltFreq(alternativeTransportFreqText),
-        alternativeTransport: calc.mapTransport(alternativeTransportText) || (alternativeTransportText ? "Anderes Pendelfahrzeug" : null),
+        transportMain: transportMainText || "UNKNOWN",
+        alternativeTransportFreq: alternativeTransportFreqText || null,
+        alternativeTransport: alternativeTransportText || null,
         distanceKm: calc.parseDistanceKm(distanceText),
-        carType: calc.resolveCarTypeLabel(carTypeText),
-        flightsPerYear: calc.parseFlightsPerYear(flightsPerYearText, { forStorage: true }),
-        flightDistanceKm: calc.parseFlightDistanceKm(flightDistanceText),
-        heatingType: mappedHeating,
-        warmWaterType: mappedWarmWater,
+        carType: carTypeText || null,
+        flightsPerYear: flightsPerYearText || null,
+        flightDistanceKm: flightDistanceText || null,
+        heatingType: heatingTypeText || "UNKNOWN",
+        warmWaterType: warmWaterTypeText || "UNKNOWN",
         usesGreenElectricity: usesGreenElectricityText || null,
-        smartElectricityUsage: calc.parseAltFreq(smartElectricityUsageText),
-        fireworkPerYear: toNumber(fireworkText),
+        smartElectricityUsage: smartElectricityUsageText || null,
+        fireworkPerYear: fireworkText || null,
         shoppingTransportEcoChoice: shoppingTransportEcoChoiceText || null,
         usesEnergyEfficientAppliances: usesEnergyEfficientAppliancesText || null,
         usesSmartDevices: usesSmartDevicesText || null,

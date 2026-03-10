@@ -1,5 +1,18 @@
 const { loginUser, registerUser, getCurrentUser } = require("../services/auth.services");
 
+function maskSensitiveAuthBody(body) {
+  if (!body || typeof body !== "object") return body;
+  const masked = { ...body };
+
+  ["password", "newPassword", "confirmPassword"].forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(masked, key) && masked[key] !== undefined) {
+      masked[key] = "***";
+    }
+  });
+
+  return masked;
+}
+
 function mapLoginError(error) {
   switch (error?.code) {
     case "MISSING_CREDENTIALS":
@@ -54,7 +67,7 @@ async function login(req, res) {
  * Login user - HTMX response
  */
 async function loginHx(req, res) {
-  console.log("🔵 loginHx called", { body: req.body });
+  console.log("🔵 loginHx called", { body: maskSensitiveAuthBody(req.body) });
   
   const { email, password } = req.body;
   if (!email || !password) {
@@ -115,7 +128,7 @@ async function register(req, res) {
 async function registerHx(req, res) {
   console.log("═══════════════════════════════════════");
   console.log("🔵 REGISTER-HX CALLED");
-  console.log("Request Body:", JSON.stringify(req.body, null, 2));
+  console.log("Request Body:", JSON.stringify(maskSensitiveAuthBody(req.body), null, 2));
   console.log("Content-Type:", req.headers["content-type"]);
   console.log("═══════════════════════════════════════");
   

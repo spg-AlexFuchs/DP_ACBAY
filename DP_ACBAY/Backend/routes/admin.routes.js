@@ -81,6 +81,67 @@ function parseIp(req) {
   );
 }
 
+function normalizeExportValue(value) {
+  if (value === null || value === undefined || value === "") return "";
+  return value;
+}
+
+function toGermanDateTime(value) {
+  if (!value) return "";
+  return new Date(value).toLocaleString("de-DE");
+}
+
+function mapSurveyToGermanExportRow(survey) {
+  return {
+    "ID": survey.id,
+    "Benutzer-ID": survey.userId,
+    "E-Mail": survey.user?.email || survey.mitarbeiter || "",
+    "Mitarbeiter": survey.mitarbeiter || survey.user?.email || "",
+    "Office Days per Week": normalizeExportValue(survey.officeDaysPerWeek),
+    "Verkehrsmittel": normalizeExportValue(survey.transportMain),
+    "Alternative Verkehrsmittel Nutzung": normalizeExportValue(survey.alternativeTransportFreq),
+    "Alternatives Verkehrsmittel": normalizeExportValue(survey.alternativeTransport),
+    "Distanz zur Arbeit (km)": normalizeExportValue(survey.distanceKm),
+    "Auto-Antrieb": normalizeExportValue(survey.carType),
+    "Flüge pro Jahr": normalizeExportValue(survey.flightsPerYear),
+    "Flugdistanz": normalizeExportValue(survey.flightDistanceKm),
+    "Heizungsart": normalizeExportValue(survey.heatingType),
+    "Warmwasser": normalizeExportValue(survey.warmWaterType),
+    "Ökostrom": normalizeExportValue(survey.usesGreenElectricity),
+    "Smart-Stromnutzung": normalizeExportValue(survey.smartElectricityUsage),
+    "Feuerwerk pro Jahr": normalizeExportValue(survey.fireworkPerYear),
+    "CO2-Wichtigkeit": normalizeExportValue(survey.co2Importance),
+    "Einkauf/Transport öko": normalizeExportValue(survey.shoppingTransportEcoChoice),
+    "Energiesparende Geräte": normalizeExportValue(survey.usesEnergyEfficientAppliances),
+    "Smarte Geräte": normalizeExportValue(survey.usesSmartDevices),
+    "Regionale Produkte": normalizeExportValue(survey.buysRegionalProducts),
+    "Nachhaltige Kleidung": normalizeExportValue(survey.buysSustainableClothing),
+    "Online-Shopping vermeiden": normalizeExportValue(survey.avoidsOnlineShopping),
+    "CO2 gesamt (kg)": normalizeExportValue(survey.totalCo2Kg),
+    "Erstellt am": toGermanDateTime(survey.createdAt),
+  };
+}
+
+function csvEscape(value) {
+  const text = String(value ?? "");
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+async function getSurveyExportRows() {
+  const surveys = await prisma.survey.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: {
+        select: {
+          email: true,
+        },
+      },
+    },
+  });
+
+  return surveys.map(mapSurveyToGermanExportRow);
+}
+
 router.use(auth, requireRole(ROLE.ADMIN, ROLE.SUPER_ADMIN));
 
 router.get("/partials/users", async (req, res) => {
@@ -348,33 +409,17 @@ router.post("/upload", upload.single("file"), async (req, res) => {
 
 router.get("/export.csv", async (req, res) => {
   try {
-    const surveys = await prisma.survey.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        userId: true,
-        officeDaysPerWeek: true,
-        transportMain: true,
-        distanceKm: true,
-        flightsPerYear: true,
-        totalCo2Kg: true,
-        createdAt: true,
-      },
-    });
-    const header = "id,userId,officeDaysPerWeek,transportMain,distanceKm,flightsPerYear,totalCo2Kg,createdAt";
-    const rows = surveys.map((s) =>
-      [
-        s.id,
-        s.userId,
-        s.officeDaysPerWeek,
-        `"${String(s.transportMain ?? "").replaceAll('"', '""')}"`,
-        s.distanceKm,
-        s.flightsPerYear ?? "",
-        s.totalCo2Kg ?? "",
-        new Date(s.createdAt).toISOString(),
-      ].join(",")
-    );
-    const csv = `${header}\n${rows.join("\n")}`;
+    const rows = await getSurveyExportRows();
+    if (!rows.length) {
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", 'attachment; filename="surveys.csv"');
+      return res.send("ID\n");
+    }
+
+    const headers = Object.keys(rows[0]);
+    const csvHeader = headers.map(csvEscape).join(",");
+    const csvRows = rows.map((row) => headers.map((h) => csvEscape(row[h])).join(","));
+    const csv = `${csvHeader}\n${csvRows.join("\n")}`;
 
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", 'attachment; filename="surveys.csv"');
@@ -387,15 +432,10 @@ router.get("/export.csv", async (req, res) => {
 
 router.get("/export.xlsx", async (req, res) => {
   try {
-    const surveys = await prisma.survey.findMany({ orderBy: { createdAt: "desc" } });
+    const rows = await getSurveyExportRows();
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(
-      surveys.map((s) => ({
-        ...s,
-        createdAt: new Date(s.createdAt).toISOString(),
-      }))
-    );
-    XLSX.utils.book_append_sheet(wb, ws, "Surveys");
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, "Umfrage Export");
     const buffer = XLSX.write(wb, { bookType: "xlsx", type: "buffer" });
 
     res.setHeader(
@@ -412,26 +452,28 @@ router.get("/export.xlsx", async (req, res) => {
 
 router.get("/export.pdf", async (req, res) => {
   try {
-    const surveys = await prisma.survey.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 200,
-      select: { id: true, userId: true, transportMain: true, totalCo2Kg: true, createdAt: true },
-    });
+    const rows = await getSurveyExportRows();
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", 'attachment; filename="surveys.pdf"');
 
     const doc = new PDFDocument({ margin: 40, size: "A4" });
     doc.pipe(res);
-    doc.fontSize(16).text("Survey Export", { underline: true });
+    doc.fontSize(16).text("Umfrage-Export", { underline: true });
     doc.moveDown();
 
-    surveys.forEach((s) => {
-      doc
-        .fontSize(10)
-        .text(
-          `#${s.id} | user:${s.userId} | transport:${s.transportMain || "-"} | co2:${s.totalCo2Kg ?? "-"} | ${new Date(s.createdAt).toLocaleString("de-DE")}`
-        );
+    if (!rows.length) {
+      doc.fontSize(11).text("Keine Daten vorhanden.");
+      doc.end();
+      return;
+    }
+
+    rows.forEach((row, index) => {
+      doc.fontSize(11).text(`Datensatz ${index + 1}`, { continued: false, underline: true });
+      Object.entries(row).forEach(([key, value]) => {
+        doc.fontSize(9).text(`${key}: ${value === "" ? "-" : value}`);
+      });
+      doc.moveDown(0.8);
     });
 
     doc.end();

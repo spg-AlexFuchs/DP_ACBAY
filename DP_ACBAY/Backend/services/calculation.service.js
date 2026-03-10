@@ -493,6 +493,11 @@ function mapWarmWaterType(text) {
   return mapped === OTHER_WARM_WATER ? null : mapped;
 }
 
+function mapWarmWaterTypes(text) {
+  const mapped = pickAllByIncludes(text, WARM_WATER_MAP).filter((x) => x !== OTHER_WARM_WATER);
+  return mapped;
+}
+
 function parseHeatingSavingReduction(text) {
   const norm = normalizeEnum(text);
   for (const [k, v] of HEATING_SAVING_REDUCTION_MAP.entries()) {
@@ -661,10 +666,9 @@ function computeSurveyTotal(input, factors) {
   }
 
   let warmWaterKg = 0;
-  const warmWaterType =
-    pickByIncludesOrWarn(input.warmWaterTypeText, WARM_WATER_MAP, "warmWaterType") ||
-    (input.warmWaterTypeText ? OTHER_WARM_WATER : null);
-  if (warmWaterType) {
+  const warmWaterTypes = mapWarmWaterTypes(input.warmWaterTypeText);
+  const warmWaterHasInput = input.warmWaterTypeText !== null && input.warmWaterTypeText !== undefined && String(input.warmWaterTypeText).trim() !== "";
+  if (warmWaterTypes.length || warmWaterHasInput) {
     const energyValue = factorValueByLabelWithFallback(
       factors,
       "Energiebedarf Warmwasser",
@@ -672,16 +676,23 @@ function computeSurveyTotal(input, factors) {
       "warmWater.energy",
       "annual_energy_kwh"
     );
-    const factorValue = warmWaterType === OTHER_WARM_WATER
-      ? categoryAverageFactorValue(factors, "heating", "emission_g_per_kwh") ?? 0
-      : factorValueByLabelWithFallback(
-        factors,
-        warmWaterType,
-        "heating",
-        "warmWater.type",
-        "emission_g_per_kwh"
-      );
-    warmWaterKg = (energyValue * factorValue) / 1000;
+
+    if (warmWaterTypes.length) {
+      const energySharePerType = energyValue / warmWaterTypes.length;
+      warmWaterKg = warmWaterTypes.reduce((sum, warmWaterType) => {
+        const factorValue = factorValueByLabelWithFallback(
+          factors,
+          warmWaterType,
+          "heating",
+          "warmWater.type",
+          "emission_g_per_kwh"
+        );
+        return sum + (energySharePerType * factorValue) / 1000;
+      }, 0);
+    } else {
+      const fallbackValue = categoryAverageFactorValue(factors, "heating", "emission_g_per_kwh") ?? 0;
+      warmWaterKg = (energyValue * fallbackValue) / 1000;
+    }
   }
 
   let heatingKg = 0;
@@ -816,6 +827,7 @@ function computeCommuteKgFromValues(input, factors) {
 function computeCommuteKgFromSurveyRecord(survey, factors) {
   const mainTransport = survey.transportMain || mapTransport(survey.transportMain);
   const altTransport = survey.alternativeTransport || mapTransport(survey.alternativeTransport);
+  const altFreq = parseAltFreq(survey.alternativeTransportFreq) ?? Number(survey.alternativeTransportFreq ?? 0);
 
   return computeCommuteKgFromValues(
     {
@@ -823,7 +835,7 @@ function computeCommuteKgFromSurveyRecord(survey, factors) {
       distanceKm: survey.distanceKm,
       mainTransport,
       altTransport,
-      altFreq: survey.alternativeTransportFreq,
+      altFreq,
     },
     factors
   );
@@ -833,8 +845,10 @@ function computeSurveyComponentKgFromRecord(survey, factors) {
   const commuteKg = computeCommuteKgFromSurveyRecord(survey, factors);
 
   let flightKg = 0;
-  if (Number.isFinite(survey.flightsPerYear) && survey.flightsPerYear > 0) {
-    const flightLabel = labelFromFlightDistanceKm(Number(survey.flightDistanceKm));
+  const parsedFlightsPerYear = parseFlightsPerYear(survey.flightsPerYear);
+  if (Number.isFinite(parsedFlightsPerYear) && parsedFlightsPerYear > 0) {
+    const parsedDistance = parseFlightDistanceKm(survey.flightDistanceKm);
+    const flightLabel = labelFromFlightDistanceKm(Number(parsedDistance));
     if (flightLabel) {
       const factorValue = factorValueByLabelWithFallback(
         factors,
@@ -843,14 +857,14 @@ function computeSurveyComponentKgFromRecord(survey, factors) {
         "flight.distance.record",
         ["emission_g_per_distance", "emission_g_per_flight"]
       );
-      flightKg = (factorValue * Number(survey.flightsPerYear)) / 1000;
+      flightKg = (factorValue * Number(parsedFlightsPerYear)) / 1000;
     }
   }
 
-  const heatingTypes = String(survey.heatingType || "")
-    .split(/\s*\+\s*/)
-    .map((part) => part.trim())
-    .filter(Boolean);
+  const mappedHeatingTypes = mapHeatingTypes(survey.heatingType);
+  const heatingTypes = mappedHeatingTypes.length
+    ? mappedHeatingTypes
+    : [mapHeatingType(survey.heatingType) || "UNKNOWN"];
 
   let heatingKg = 0;
   if (heatingTypes.length) {
@@ -880,8 +894,9 @@ function computeSurveyComponentKgFromRecord(survey, factors) {
   }
 
   let warmWaterKg = 0;
-  const warmWaterRaw = survey.warmWaterType || null;
-  if (warmWaterRaw) {
+  const warmWaterTypes = mapWarmWaterTypes(survey.warmWaterType);
+  const warmWaterHasInput = survey.warmWaterType !== null && survey.warmWaterType !== undefined && String(survey.warmWaterType).trim() !== "";
+  if (warmWaterTypes.length || warmWaterHasInput) {
     const energyValue = factorValueByLabelWithFallback(
       factors,
       "Energiebedarf Warmwasser",
@@ -890,18 +905,22 @@ function computeSurveyComponentKgFromRecord(survey, factors) {
       "annual_energy_kwh"
     );
 
-    const isUnknown = warmWaterRaw === "UNKNOWN" || warmWaterRaw === "Sonstiges";
-    const factorValue = isUnknown
-      ? categoryAverageFactorValue(factors, "heating", "emission_g_per_kwh") ?? 0
-      : factorValueByLabelWithFallback(
-        factors,
-        warmWaterRaw,
-        "heating",
-        "warmWater.type.record",
-        "emission_g_per_kwh"
-      );
-
-    warmWaterKg = (energyValue * factorValue) / 1000;
+    if (warmWaterTypes.length) {
+      const energySharePerType = energyValue / warmWaterTypes.length;
+      warmWaterKg = warmWaterTypes.reduce((sum, warmWaterType) => {
+        const factorValue = factorValueByLabelWithFallback(
+          factors,
+          warmWaterType,
+          "heating",
+          "warmWater.type.record",
+          "emission_g_per_kwh"
+        );
+        return sum + (energySharePerType * factorValue) / 1000;
+      }, 0);
+    } else {
+      const fallbackValue = categoryAverageFactorValue(factors, "heating", "emission_g_per_kwh") ?? 0;
+      warmWaterKg = (energyValue * fallbackValue) / 1000;
+    }
   }
 
   let electricityKg = 0;
@@ -945,7 +964,7 @@ function computeSurveyComponentKgFromRecord(survey, factors) {
 
     electricityKg = (energyValue * factorValue) / 1000;
 
-    const smartUsage = Number(survey.smartElectricityUsage);
+    const smartUsage = parseAltFreq(survey.smartElectricityUsage) ?? Number(survey.smartElectricityUsage);
     if (Number.isFinite(smartUsage) && smartUsage > 0) {
       const reduction = Math.min(Math.max(smartUsage, 0), 1) * SMART_ELECTRICITY_MAX_REDUCTION;
       electricityKg *= 1 - reduction;
@@ -985,6 +1004,7 @@ module.exports = {
   mapHeatingType,
   mapHeatingTypes,
   mapWarmWaterType,
+  mapWarmWaterTypes,
   parseFlightDistanceKm,
   parseOfficeDays,
   parseAltFreq,
