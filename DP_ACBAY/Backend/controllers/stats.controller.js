@@ -107,17 +107,39 @@ async function getEmissionFactors(req, res) {
  */
 async function getPublicAggregations(req, res) {
   try {
-    const surveys = await prisma.survey.findMany({
-      select: {
-        transportMain: true,
-        totalCo2Kg: true,
-        createdAt: true,
-        flightsPerYear: true,
-        heatingType: true,
-        usesGreenElectricity: true,
-      },
-    });
-    return res.json(buildSurveyAggregations(surveys));
+    const [surveys, factors] = await Promise.all([
+      prisma.survey.findMany({
+        select: {
+          transportMain: true,
+          alternativeTransport: true,
+          alternativeTransportFreq: true,
+          officeDaysPerWeek: true,
+          distanceKm: true,
+          totalCo2Kg: true,
+          createdAt: true,
+          flightsPerYear: true,
+          heatingType: true,
+          usesGreenElectricity: true,
+        },
+      }),
+      prisma.emissionFactor.findMany({
+        select: {
+          category: true,
+          type: true,
+          co2PerUnit: true,
+          unit: true,
+        },
+      }),
+    ]);
+
+    const normalizedFactors = factors.map((factor) => ({
+      category: factor.category,
+      label: factor.type,
+      valueNumber: Number(factor.co2PerUnit || 0),
+      unit: factor.unit,
+    }));
+
+    return res.json(buildSurveyAggregations(surveys, normalizedFactors));
   } catch (err) {
     console.error("Failed to compute aggregations:", err);
     return res.status(500).json({ error: "failed" });
@@ -133,19 +155,40 @@ async function getPrivateAggregations(req, res) {
       ? { userId: req.authUser.id }
       : {};
 
-    const surveys = await prisma.survey.findMany({
-      where,
-      select: {
-        transportMain: true,
-        totalCo2Kg: true,
-        createdAt: true,
-        flightsPerYear: true,
-        heatingType: true,
-        usesGreenElectricity: true,
-      },
-    });
+    const [surveys, factors] = await Promise.all([
+      prisma.survey.findMany({
+        where,
+        select: {
+          transportMain: true,
+          alternativeTransport: true,
+          alternativeTransportFreq: true,
+          officeDaysPerWeek: true,
+          distanceKm: true,
+          totalCo2Kg: true,
+          createdAt: true,
+          flightsPerYear: true,
+          heatingType: true,
+          usesGreenElectricity: true,
+        },
+      }),
+      prisma.emissionFactor.findMany({
+        select: {
+          category: true,
+          type: true,
+          co2PerUnit: true,
+          unit: true,
+        },
+      }),
+    ]);
 
-    return res.json(buildSurveyAggregations(surveys));
+    const normalizedFactors = factors.map((factor) => ({
+      category: factor.category,
+      label: factor.type,
+      valueNumber: Number(factor.co2PerUnit || 0),
+      unit: factor.unit,
+    }));
+
+    return res.json(buildSurveyAggregations(surveys, normalizedFactors));
   } catch (err) {
     console.error("Failed to compute private aggregations:", err);
     return res.status(500).json({ error: "failed" });

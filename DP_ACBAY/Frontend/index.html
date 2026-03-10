@@ -157,7 +157,7 @@
 
             <!-- CO2 Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3 md:col-span-2 xl:col-span-1">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">CO2 nach Transport</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Pendel-CO2 nach Transport</div>
               <div class="h-56">
                 <canvas id="co2Chart"></canvas>
               </div>
@@ -415,17 +415,47 @@
       }
 
       function renderAggregatedCharts(agg) {
+        const displayTransportLabel = (label) => {
+          if (label === "Elektroauto BEV EU Strommix") return "Elektroauto";
+          if (label === "ÖPNV Bahn/Tram") return "Öffentliche Verkehrsmittel";
+          return label;
+        };
+
+        const displayHeatingLabel = (label) => {
+          if (label === "Heizöl extra leicht") return "Heizöl";
+          if (label === "Wärmepumpe (EU-Strommix, JAZ 3)") return "Wärmepumpe";
+          if (label === "Erdgas (Brennwert)") return "Erdgas";
+          if (label === "Fernwärme Ø Österreich") return "Fernwärme";
+          if (label === "Biomasse Pellets") return "Pellets";
+          return label;
+        };
+
+        const aggregateByDisplayLabel = (sourceObj, displayFn) => {
+          const grouped = {};
+          Object.entries(sourceObj || {}).forEach(([rawLabel, rawValue]) => {
+            const displayLabel = displayFn(rawLabel);
+            grouped[displayLabel] = (grouped[displayLabel] || 0) + Number(rawValue || 0);
+          });
+          return grouped;
+        };
+
         // agg: { byTransport: {...}, avgCo2ByTransport: {...}, flights: {...} ... }
-        const transportLabels = Object.keys(agg.byTransport || {});
-        const transportData = transportLabels.map((l) => agg.byTransport[l]);
+        const transportGrouped = aggregateByDisplayLabel(agg.byTransport, displayTransportLabel);
+        const transportLabels = Object.keys(transportGrouped);
+        const transportData = transportLabels.map((label) => transportGrouped[label]);
 
         const flightLabels = Object.keys(agg.flights || {});
         const flightData = flightLabels.map((l) => agg.flights[l]);
 
-        const co2Labels = Object.keys(agg.avgCo2ByTransport || {});
-        const co2Data = co2Labels.map((l) => agg.avgCo2ByTransport[l]);
-        const heatingLabels = Object.keys(agg.byHeating || {});
-        const heatingData = heatingLabels.map((l) => agg.byHeating[l]);
+        const excludedCo2TransportLabels = new Set(["Zu Fuß", "Zu Fuss", "Fahrrad"]);
+        const co2LabelsRaw = Object.keys(agg.avgCo2ByTransport || {}).filter(
+          (label) => !excludedCo2TransportLabels.has(label)
+        );
+        const co2Labels = co2LabelsRaw.map((label) => displayTransportLabel(label));
+        const co2Data = co2LabelsRaw.map((l) => agg.avgCo2ByTransport[l]);
+        const heatingLabelsRaw = Object.keys(agg.byHeating || {});
+        const heatingLabels = heatingLabelsRaw.map((label) => displayHeatingLabel(label));
+        const heatingData = heatingLabelsRaw.map((l) => agg.byHeating[l]);
         const electricityLabels = Object.keys(agg.byElectricity || {});
         const electricityData = electricityLabels.map((l) => agg.byElectricity[l]);
 

@@ -1,16 +1,126 @@
-/**
- * Calculation Service - CO2 Footprint Calculations
- */
+function toNumber(value) {
+  if (typeof value === "number") return value;
+  if (value === null || value === undefined) return null;
+  const text = String(value).replace(",", ".").trim();
+  const parsed = Number(text);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
-function normalizeEnum(value) {
+function normalizeText(value) {
   return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ß/g, "ss")
     .replace(/[–—]/g, "-")
     .toLowerCase()
     .replace(/\s+/g, " ")
-    .replace(/[.,;:!?()]/g, "")
     .trim();
+}
+
+function normalizeEnum(value) {
+  return normalizeText(value).replace(/[.,;:!?()]/g, "").trim();
+}
+
+function normalizeUnit(value) {
+  return normalizeText(value || "").replace(/co2e?/g, "co2").replace(/\s+/g, " ").trim();
+}
+
+function getUnitGroup(unit) {
+  const norm = normalizeUnit(unit);
+  if (!norm) return "unknown";
+  if (norm.includes("t co2") && norm.includes("jahr")) return "annual_tonnes";
+  if (norm.includes("kwh") && norm.includes("jahr")) return "annual_energy_kwh";
+  if (norm.includes("pro flug")) return "emission_g_per_flight";
+  if (norm.startsWith("g") && norm.includes("/kwh")) return "emission_g_per_kwh";
+  if (norm.startsWith("g") && (norm.includes("/km") || norm.includes("/pkm"))) {
+    return "emission_g_per_distance";
+  }
+  return "other";
+}
+
+function unitGroupMatches(actual, expected) {
+  if (!expected) return true;
+  if (Array.isArray(expected)) return expected.includes(actual);
+  return actual === expected;
+}
+
+function pickByIncludes(text, map) {
+  const norm = normalizeEnum(text);
+  for (const [needle, result] of map.entries()) {
+    if (norm.includes(needle)) return result;
+  }
+  return null;
+}
+
+function pickByIncludesOrWarn(text, map, fieldName) {
+  if (text === null || text === undefined || String(text).trim() === "") return null;
+  const result = pickByIncludes(text, map);
+  if (!result) {
+    console.warn(`[CO2] Unmapped answer for ${fieldName}: "${text}"`);
+  }
+  return result;
+}
+
+function findFactor(factors, label) {
+  if (!label) return null;
+  const normalizedLabel = normalizeText(label);
+  return factors.find((x) => normalizeText(x.label) === normalizedLabel) || null;
+}
+
+function findFactorsByLabel(factors, label) {
+  if (!label) return [];
+  const normalizedLabel = normalizeText(label);
+  return factors.filter((x) => normalizeText(x.label) === normalizedLabel);
+}
+
+function findFirstFactor(factors, labels) {
+  for (const label of labels) {
+    const factor = findFactor(factors, label);
+    if (factor) return factor;
+  }
+  return null;
+}
+
+function categoryAverageFactorValue(factors, category, expectedUnitGroup) {
+  const values = factors
+    .filter((x) => {
+      if (x.category !== category || !Number.isFinite(x.valueNumber)) return false;
+      return expectedUnitGroup ? unitGroupMatches(getUnitGroup(x.unit), expectedUnitGroup) : true;
+    })
+    .map((x) => x.valueNumber);
+
+  if (!values.length) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function factorValueByLabelWithFallback(factors, label, category, context, expectedUnitGroup) {
+  if (!label) return 0;
+
+  const directCandidates = findFactorsByLabel(factors, label).filter((x) => Number.isFinite(x.valueNumber));
+  if (directCandidates.length) {
+    const compatible = directCandidates.find((x) => unitGroupMatches(getUnitGroup(x.unit), expectedUnitGroup));
+    if (compatible) {
+      return compatible.valueNumber;
+    }
+
+    const candidateGroups = [...new Set(directCandidates.map((x) => getUnitGroup(x.unit)))].join(", ");
+    console.warn(
+      `[CO2] Unit mismatch for ${context} ("${label}"): expected ${expectedUnitGroup}, got ${candidateGroups}.`
+    );
+  }
+
+  const fallback = categoryAverageFactorValue(factors, category, expectedUnitGroup);
+  if (Number.isFinite(fallback)) {
+    console.warn(
+      `[CO2] Missing factor for ${context} ("${label}"). Using ${category}/${expectedUnitGroup} average: ${fallback.toFixed(2)}.`
+    );
+    return fallback;
+  }
+
+  console.warn(
+    `[CO2] Missing factor for ${context} ("${label}") and no ${category}/${expectedUnitGroup} fallback available.`
+  );
+  return 0;
 }
 
 const DISTANCE_MAP = new Map([
@@ -25,6 +135,7 @@ const DISTANCE_MAP = new Map([
 
 const ALT_FREQ_MAP = new Map([
   ["oft", 1 / 3],
+  ["mittel", 0.2],
   ["selten", 0.1],
   ["manchmal", 1 / 30],
   ["nie", 0],
@@ -32,10 +143,13 @@ const ALT_FREQ_MAP = new Map([
 
 const FLIGHT_COUNT_MAP = new Map([
   ["0", 0],
-  ["1-2", 1.9],
-  ["2-5", 3.2],
-  ["5-10", 7],
+  ["1-2", 1.5],
+  ["2-5", 3.5],
+  ["5-10", 7.5],
 ]);
+
+const COMMUTE_ROUND_TRIPS_PER_DAY = 2;
+const COMMUTE_WEEKS_PER_YEAR = 46;
 
 const FLIGHT_DISTANCE_MAP = new Map([
   ["kurzstrecke", "Flugreisen Kurzstrecke (<1500 km)"],
@@ -43,9 +157,27 @@ const FLIGHT_DISTANCE_MAP = new Map([
   ["langstrecke", "Flugreisen Langstrecke (>3500 km)"],
 ]);
 
+const SMART_ELECTRICITY_MAX_REDUCTION = 0.15;
+const NO_ADJUSTMENT = "__NO_ADJUSTMENT__";
+const SOME_APPLIANCES = "__SOME_APPLIANCES__";
+const NO_CAR = "__NO_CAR__";
+const APPLIANCES_SOME_SHARE = 0.5;
+const PENALTY_SUSTAINABLE_CLOTHING_NO = "__PENALTY_SUSTAINABLE_CLOTHING_NO__";
+const PENALTY_REGIONAL_PRODUCTS_NO = "__PENALTY_REGIONAL_PRODUCTS_NO__";
+const PENALTY_AVOIDS_ONLINE_NO = "__PENALTY_AVOIDS_ONLINE_NO__";
+const PENALTY_SHOPPING_TRANSPORT_NO = "__PENALTY_SHOPPING_TRANSPORT_NO__";
+
+const PENALTY_TONS = {
+  [PENALTY_SUSTAINABLE_CLOTHING_NO]: 0.1,
+  [PENALTY_REGIONAL_PRODUCTS_NO]: 0.06,
+  [PENALTY_AVOIDS_ONLINE_NO]: 0.07,
+  [PENALTY_SHOPPING_TRANSPORT_NO]: 0.1,
+};
+
 const TRANSPORT_MAP = new Map([
   ["pkw benzin", "PKW Benzin"],
   ["auto benzin", "PKW Benzin"],
+  ["eigenes auto", "PKW Benzin"],
   ["pkw diesel", "PKW Diesel"],
   ["auto diesel", "PKW Diesel"],
   ["hybrid", "Hybrid HEV"],
@@ -58,6 +190,8 @@ const TRANSPORT_MAP = new Map([
   ["bus", "ÖPNV Bus Diesel"],
   ["offis", "ÖPNV Bahn/Tram"],
   ["oeffis", "ÖPNV Bahn/Tram"],
+  ["offentliche verkehrsmittel", "ÖPNV Bahn/Tram"],
+  ["oeffentliche verkehrsmittel", "ÖPNV Bahn/Tram"],
   ["zug", "ÖPNV Bahn/Tram"],
   ["bahn", "ÖPNV Bahn/Tram"],
   ["tram", "ÖPNV Bahn/Tram"],
@@ -68,6 +202,7 @@ const TRANSPORT_MAP = new Map([
   ["roller", "E-Bike/E-Roller"],
   ["zu fuss", "Zu Fuß"],
   ["gehen", "Zu Fuß"],
+  ["auto", "PKW Benzin"],
 ]);
 
 const CAR_TYPE_MAP = new Map([
@@ -77,6 +212,9 @@ const CAR_TYPE_MAP = new Map([
   ["plugin hybrid", "PlugInHybrid PHEV"],
   ["plug in hybrid", "PlugInHybrid PHEV"],
   ["elektro", "Elektroauto BEV EU Strommix"],
+  ["ich benutze kein auto", NO_CAR],
+  ["benutze kein auto", NO_CAR],
+  ["kein auto", NO_CAR],
 ]);
 
 const HEATING_MAP = new Map([
@@ -99,6 +237,8 @@ const WARM_WATER_MAP = new Map([
   ["erdgas", "Erdgas (Brennwert)"],
   ["ol", "Heizöl extra leicht"],
   ["heizol", "Heizöl extra leicht"],
+  ["pellets", "Biomasse Pellets"],
+  ["fernwarme", "Fernwärme Ø Österreich"],
   ["strom", "Strom Ö-Mix"],
   ["warmepumpe", "Wärmepumpe (EU-Strommix, JAZ 3)"],
   ["solar", "Solarthermie"],
@@ -108,6 +248,9 @@ const ELECTRICITY_TYPE_MAP = new Map([
   ["okostrom", "Ökostrom"],
   ["ja", "Ökostrom"],
   ["yes", "Ökostrom"],
+  ["teilweise", "PARTLY_GREEN"],
+  ["teils", "PARTLY_GREEN"],
+  ["partly", "PARTLY_GREEN"],
   ["strommix", "Strom Ö-Mix"],
   ["strom o-mix", "Strom Ö-Mix"],
   ["strom o mix", "Strom Ö-Mix"],
@@ -133,37 +276,57 @@ const CONSUMPTION_BASE_LABELS = [
 ];
 
 const CONSUMPTION_CLOTHING_MAP = new Map([
+  ["ja", "Nachhaltige Kleidung – immer"],
   ["immer", "Nachhaltige Kleidung – immer"],
+  ["mittel", "Nachhaltige Kleidung – manchmal"],
   ["manchmal", "Nachhaltige Kleidung – manchmal"],
+  ["nein", PENALTY_SUSTAINABLE_CLOTHING_NO],
+  ["no", PENALTY_SUSTAINABLE_CLOTHING_NO],
 ]);
 
 const CONSUMPTION_REGIONAL_MAP = new Map([
+  ["ja", "Regionaler Einkauf – oft"],
   ["oft", "Regionaler Einkauf – oft"],
+  ["mittel", "Regionaler Einkauf – manchmal"],
   ["manchmal", "Regionaler Einkauf – manchmal"],
+  ["nein", PENALTY_REGIONAL_PRODUCTS_NO],
+  ["no", PENALTY_REGIONAL_PRODUCTS_NO],
 ]);
 
 const CONSUMPTION_ONLINE_MAP = new Map([
+  ["ja", "Verzicht auf Onlinekauf – oft"],
   ["oft", "Verzicht auf Onlinekauf – oft"],
+  ["mittel", "Verzicht auf Onlinekauf – manchmal"],
   ["manchmal", "Verzicht auf Onlinekauf – manchmal"],
+  ["nein", PENALTY_AVOIDS_ONLINE_NO],
+  ["no", PENALTY_AVOIDS_ONLINE_NO],
 ]);
 
 const CONSUMPTION_SHOPPING_TRANSPORT_MAP = new Map([
   ["ja", "Umweltfreundlicher Transport beim Einkauf – Ja"],
+  ["mittel", "Umweltfreundlicher Transport beim Einkauf – Manchmal"],
   ["manchmal", "Umweltfreundlicher Transport beim Einkauf – Manchmal"],
+  ["nein", PENALTY_SHOPPING_TRANSPORT_NO],
+  ["no", PENALTY_SHOPPING_TRANSPORT_NO],
 ]);
 
 const CONSUMPTION_APPLIANCES_MAP = new Map([
   ["ja, alle", "Energiesparende Geräte – alle (Herstellung)"],
   ["ja alle", "Energiesparende Geräte – alle (Herstellung)"],
+  ["einige", SOME_APPLIANCES],
+  ["teilweise", SOME_APPLIANCES],
+  ["nein", NO_ADJUSTMENT],
+  ["no", NO_ADJUSTMENT],
 ]);
 
 const CONSUMPTION_SMART_DEVICES_MAP = new Map([
   ["ja", "Smarte Geräte – Ja (Herstellung)"],
+  ["nein", NO_ADJUSTMENT],
+  ["no", NO_ADJUSTMENT],
+  ["weiss nicht", NO_ADJUSTMENT],
+  ["weis nicht", NO_ADJUSTMENT],
 ]);
 
-/**
- * Parse office days from text
- */
 function parseOfficeDays(text) {
   const norm = normalizeEnum(text);
   const firstDigit = norm.match(/\d+/);
@@ -174,9 +337,6 @@ function parseOfficeDays(text) {
   return 0;
 }
 
-/**
- * Parse distance range to km
- */
 function parseDistanceKm(text) {
   const norm = normalizeEnum(text).replace(/\s/g, "");
   for (const [k, v] of DISTANCE_MAP.entries()) {
@@ -186,9 +346,6 @@ function parseDistanceKm(text) {
   return 0;
 }
 
-/**
- * Parse alternative transport frequency
- */
 function parseAltFreq(text) {
   const norm = normalizeEnum(text);
   for (const [k, v] of ALT_FREQ_MAP.entries()) {
@@ -197,16 +354,15 @@ function parseAltFreq(text) {
   return null;
 }
 
-/**
- * Parse flights per year
- */
-function parseFlightsPerYear(text) {
+function parseFlightsPerYear(text, options = {}) {
+  const { forStorage = false } = options;
   const norm = normalizeEnum(text).replace(/\s/g, "");
   for (const [k, v] of FLIGHT_COUNT_MAP.entries()) {
-    if (norm.includes(k)) return Math.round(v);
+    if (norm.includes(k)) return forStorage ? Math.round(v) : v;
   }
   const num = toNumber(text);
-  return num === null ? null : Math.round(num);
+  if (num === null) return null;
+  return forStorage ? Math.round(num) : num;
 }
 
 function parseFireworkAdjustmentLabel(text) {
@@ -230,138 +386,252 @@ function parseFireworkAdjustmentLabel(text) {
   return null;
 }
 
-/**
- * Find factor from list by label
- */
-function findFactor(factors, label) {
-  if (!label) return null;
-  return factors.find((x) => x.label === label) || null;
+function resolveMainTransportLabel(transportMainText, carTypeText) {
+  const main = pickByIncludesOrWarn(transportMainText, TRANSPORT_MAP, "transportMain");
+  const carRaw = pickByIncludes(carTypeText, CAR_TYPE_MAP);
+  const car = carRaw === NO_CAR ? null : carRaw;
+  const mainNorm = normalizeEnum(transportMainText || "");
+  const mainIsGenericCar =
+    mainNorm.includes("eigenes auto") ||
+    mainNorm === "auto" ||
+    mainNorm.includes("firmenwagen") ||
+    mainNorm.includes("pkw");
+
+  if (carRaw === NO_CAR && mainIsGenericCar) return null;
+  if (mainIsGenericCar && car) return car;
+  return main || car;
 }
 
-function findFirstFactor(factors, labels) {
-  for (const label of labels) {
-    const factor = findFactor(factors, label);
-    if (factor) return factor;
+function resolveCarTypeLabel(carTypeText) {
+  const raw = pickByIncludes(carTypeText, CAR_TYPE_MAP);
+  if (raw === NO_CAR) return null;
+  if (!raw && carTypeText !== null && carTypeText !== undefined && String(carTypeText).trim() !== "") {
+    console.warn(`[CO2] Unmapped answer for carType: "${carTypeText}"`);
   }
+  return raw;
+}
+
+function mapTransport(text) {
+  return pickByIncludes(text, TRANSPORT_MAP);
+}
+
+function mapHeatingType(text) {
+  return pickByIncludes(text, HEATING_MAP);
+}
+
+function mapWarmWaterType(text) {
+  return pickByIncludes(text, WARM_WATER_MAP);
+}
+
+function parseFlightDistanceKm(text) {
+  const flightDistanceLabel = pickByIncludes(text, FLIGHT_DISTANCE_MAP);
+  if (flightDistanceLabel?.includes("<1500")) return 750;
+  if (flightDistanceLabel?.includes("1500–3500")) return 2500;
+  if (flightDistanceLabel?.includes(">3500")) return 5000;
   return null;
 }
 
-/**
- * Pick value from map by includes matching
- */
-function pickByIncludes(text, map) {
-  const norm = normalizeEnum(text);
-  for (const [needle, result] of map.entries()) {
-    if (norm.includes(needle)) return result;
+function factorValueByLabel(factors, label, category, context, expectedUnitGroup) {
+  return factorValueByLabelWithFallback(factors, label, category, context, expectedUnitGroup);
+}
+
+function applianceAdjustmentTons(factors, appliancesLabel) {
+  if (!appliancesLabel || appliancesLabel === NO_ADJUSTMENT) return 0;
+  if (appliancesLabel === SOME_APPLIANCES) {
+    const allDevicesTons = factorValueByLabel(
+      factors,
+      "Energiesparende Geräte – alle (Herstellung)",
+      "consumption",
+      "consumption.appliances.all",
+      "annual_tonnes"
+    );
+    return allDevicesTons * APPLIANCES_SOME_SHARE;
   }
-  return null;
+  return factorValueByLabel(
+    factors,
+    appliancesLabel,
+    "consumption",
+    "consumption.appliances",
+    "annual_tonnes"
+  );
 }
 
-/**
- * Convert text to number
- */
-function toNumber(value) {
-  if (typeof value === "number") return value;
-  if (value === null || value === undefined) return null;
-  const text = String(value).replace(",", ".").trim();
-  const parsed = Number(text);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function factorValueByLabel(factors, label) {
-  return findFactor(factors, label)?.valueNumber || 0;
+function optionalConsumptionAdjustmentTons(factors, label, context) {
+  if (!label || label === NO_ADJUSTMENT) return 0;
+  if (Object.prototype.hasOwnProperty.call(PENALTY_TONS, label)) {
+    return PENALTY_TONS[label];
+  }
+  return factorValueByLabel(factors, label, "consumption", context, "annual_tonnes");
 }
 
 function computeConsumptionKg(input, factors) {
   const baseTons = CONSUMPTION_BASE_LABELS.reduce(
-    (sum, label) => sum + factorValueByLabel(factors, label),
+    (sum, label) =>
+      sum + factorValueByLabel(factors, label, "consumption", `consumption.base.${label}`, "annual_tonnes"),
     0
   );
 
-  const clothingLabel = pickByIncludes(input.sustainableClothingText, CONSUMPTION_CLOTHING_MAP);
-  const regionalLabel = pickByIncludes(input.regionalProductsText, CONSUMPTION_REGIONAL_MAP);
-  const onlineLabel = pickByIncludes(input.avoidsOnlineShoppingText, CONSUMPTION_ONLINE_MAP);
-  const shoppingTransportLabel = pickByIncludes(
+  const clothingLabel = pickByIncludesOrWarn(
+    input.sustainableClothingText,
+    CONSUMPTION_CLOTHING_MAP,
+    "sustainableClothing"
+  );
+  const regionalLabel = pickByIncludesOrWarn(
+    input.regionalProductsText,
+    CONSUMPTION_REGIONAL_MAP,
+    "regionalProducts"
+  );
+  const onlineLabel = pickByIncludesOrWarn(
+    input.avoidsOnlineShoppingText,
+    CONSUMPTION_ONLINE_MAP,
+    "avoidsOnlineShopping"
+  );
+  const shoppingTransportLabel = pickByIncludesOrWarn(
     input.shoppingTransportEcoChoiceText,
-    CONSUMPTION_SHOPPING_TRANSPORT_MAP
+    CONSUMPTION_SHOPPING_TRANSPORT_MAP,
+    "shoppingTransportEcoChoice"
   );
-  const appliancesLabel = pickByIncludes(
+  const appliancesLabel = pickByIncludesOrWarn(
     input.usesEnergyEfficientAppliancesText,
-    CONSUMPTION_APPLIANCES_MAP
+    CONSUMPTION_APPLIANCES_MAP,
+    "usesEnergyEfficientAppliances"
   );
-  const smartDevicesLabel = pickByIncludes(input.usesSmartDevicesText, CONSUMPTION_SMART_DEVICES_MAP);
+  const smartDevicesLabel = pickByIncludesOrWarn(
+    input.usesSmartDevicesText,
+    CONSUMPTION_SMART_DEVICES_MAP,
+    "usesSmartDevices"
+  );
   const fireworkLabel = parseFireworkAdjustmentLabel(input.fireworkText);
 
   const adjustmentTons =
-    factorValueByLabel(factors, clothingLabel) +
-    factorValueByLabel(factors, regionalLabel) +
-    factorValueByLabel(factors, onlineLabel) +
-    factorValueByLabel(factors, shoppingTransportLabel) +
-    factorValueByLabel(factors, appliancesLabel) +
-    factorValueByLabel(factors, smartDevicesLabel) +
-    factorValueByLabel(factors, fireworkLabel);
+    optionalConsumptionAdjustmentTons(factors, clothingLabel, "consumption.clothing") +
+    optionalConsumptionAdjustmentTons(factors, regionalLabel, "consumption.regional") +
+    optionalConsumptionAdjustmentTons(factors, onlineLabel, "consumption.online") +
+    optionalConsumptionAdjustmentTons(factors, shoppingTransportLabel, "consumption.shoppingTransport") +
+    applianceAdjustmentTons(factors, appliancesLabel) +
+    optionalConsumptionAdjustmentTons(factors, smartDevicesLabel, "consumption.smartDevices") +
+    factorValueByLabel(factors, fireworkLabel, "consumption", "consumption.firework", "annual_tonnes");
 
   return (baseTons + adjustmentTons) * 1000;
 }
 
-/**
- * Compute total CO2 for a survey
- */
 function computeSurveyTotal(input, factors) {
   const officeDays = parseOfficeDays(input.officeDaysText);
   const distanceKm = parseDistanceKm(input.distanceText);
-  const mainTransport =
-    pickByIncludes(input.transportMainText, TRANSPORT_MAP) ||
-    pickByIncludes(input.carTypeText, CAR_TYPE_MAP);
-  const altTransport = pickByIncludes(input.alternativeTransportText, TRANSPORT_MAP);
+  const mainTransport = resolveMainTransportLabel(input.transportMainText, input.carTypeText);
+  const altTransport = pickByIncludesOrWarn(input.alternativeTransportText, TRANSPORT_MAP, "alternativeTransport");
   const altFreq = parseAltFreq(input.alternativeTransportFreqText) ?? 0;
 
-  let commuteKg = 0;
-  if (officeDays && distanceKm && mainTransport) {
-    const mainFactor = findFactor(factors, mainTransport);
-    const altFactor = findFactor(factors, altTransport);
-    const mainValue = mainFactor?.valueNumber || 0;
-    const altValue = altFactor?.valueNumber || 0;
-    const commuteG = officeDays * distanceKm * (mainValue * (1 - altFreq) + altValue * altFreq);
-    commuteKg = commuteG / 1000;
-  }
+  const commuteKg = computeCommuteKgFromValues(
+    {
+      officeDays,
+      distanceKm,
+      mainTransport,
+      altTransport,
+      altFreq,
+    },
+    factors
+  );
 
   let flightKg = 0;
   const flightsPerYear = parseFlightsPerYear(input.flightsPerYearText);
-  const flightLabel = pickByIncludes(input.flightDistanceText, FLIGHT_DISTANCE_MAP);
+  const flightLabel = pickByIncludesOrWarn(input.flightDistanceText, FLIGHT_DISTANCE_MAP, "flightDistance");
   if (flightsPerYear !== null && flightLabel) {
-    const factor = findFactor(factors, flightLabel);
-    flightKg = ((factor?.valueNumber || 0) * flightsPerYear) / 1000;
+    const factorValue = factorValueByLabelWithFallback(
+      factors,
+      flightLabel,
+      "flight",
+      "flight.distance",
+      ["emission_g_per_distance", "emission_g_per_flight"]
+    );
+    flightKg = (factorValue * flightsPerYear) / 1000;
   }
 
   let warmWaterKg = 0;
-  const warmWaterType = pickByIncludes(input.warmWaterTypeText, WARM_WATER_MAP);
+  const warmWaterType = pickByIncludesOrWarn(input.warmWaterTypeText, WARM_WATER_MAP, "warmWaterType");
   if (warmWaterType) {
-    const energy = findFactor(factors, "Energiebedarf Warmwasser");
-    const factor = findFactor(factors, warmWaterType);
-    if (energy && factor) {
-      warmWaterKg = ((energy.valueNumber || 0) * (factor.valueNumber || 0)) / 1000;
-    }
+    const energyValue = factorValueByLabelWithFallback(
+      factors,
+      "Energiebedarf Warmwasser",
+      "heating",
+      "warmWater.energy",
+      "annual_energy_kwh"
+    );
+    const factorValue = factorValueByLabelWithFallback(
+      factors,
+      warmWaterType,
+      "heating",
+      "warmWater.type",
+      "emission_g_per_kwh"
+    );
+    warmWaterKg = (energyValue * factorValue) / 1000;
   }
 
   let heatingKg = 0;
-  const heatingType = pickByIncludes(input.heatingTypeText, HEATING_MAP);
+  const heatingType = pickByIncludesOrWarn(input.heatingTypeText, HEATING_MAP, "heatingType");
   if (heatingType) {
     const energy = findFirstFactor(factors, HEATING_ENERGY_LABELS);
-    const factor = findFactor(factors, heatingType);
-    if (energy && factor) {
-      heatingKg = ((energy.valueNumber || 0) * (factor.valueNumber || 0)) / 1000;
-    }
+    const factorValue = factorValueByLabelWithFallback(
+      factors,
+      heatingType,
+      "heating",
+      "heating.type",
+      "emission_g_per_kwh"
+    );
+    const energyValue = factorValueByLabelWithFallback(
+      factors,
+      energy?.label || "Energiebedarf Heizen",
+      "heating",
+      "heating.energy",
+      "annual_energy_kwh"
+    );
+    heatingKg = (energyValue * factorValue) / 1000;
   }
 
   let electricityKg = 0;
-  const electricityType = pickByIncludes(input.usesGreenElectricityText, ELECTRICITY_TYPE_MAP);
+  const electricityType = pickByIncludesOrWarn(input.usesGreenElectricityText, ELECTRICITY_TYPE_MAP, "usesGreenElectricity");
   if (electricityType) {
     const energy = findFirstFactor(factors, ELECTRICITY_ENERGY_LABELS);
-    const factor = findFactor(factors, electricityType);
-    if (energy && factor) {
-      electricityKg = ((energy.valueNumber || 0) * (factor.valueNumber || 0)) / 1000;
+    let factorValue;
+    if (electricityType === "PARTLY_GREEN") {
+      const green = factorValueByLabelWithFallback(
+        factors,
+        "Ökostrom",
+        "heating",
+        "electricity.partly.green",
+        "emission_g_per_kwh"
+      );
+      const mix = factorValueByLabelWithFallback(
+        factors,
+        "Strom Ö-Mix",
+        "heating",
+        "electricity.partly.mix",
+        "emission_g_per_kwh"
+      );
+      factorValue = (green + mix) / 2;
+    } else {
+      factorValue = factorValueByLabelWithFallback(
+        factors,
+        electricityType,
+        "heating",
+        "electricity.type",
+        "emission_g_per_kwh"
+      );
     }
+    const energyValue = factorValueByLabelWithFallback(
+      factors,
+      energy?.label || "Energiebedarf Strom",
+      "heating",
+      "electricity.energy",
+      "annual_energy_kwh"
+    );
+    electricityKg = (energyValue * factorValue) / 1000;
+  }
+
+  const smartElectricityUsageFreq = parseAltFreq(input.smartElectricityUsageText) ?? 0;
+  if (electricityKg > 0 && smartElectricityUsageFreq > 0) {
+    const reduction = Math.min(Math.max(smartElectricityUsageFreq, 0), 1) * SMART_ELECTRICITY_MAX_REDUCTION;
+    electricityKg *= 1 - reduction;
   }
 
   const consumptionKg = computeConsumptionKg(
@@ -380,14 +650,68 @@ function computeSurveyTotal(input, factors) {
   return commuteKg + flightKg + warmWaterKg + heatingKg + electricityKg + consumptionKg;
 }
 
+function computeCommuteKgFromValues(input, factors) {
+  const officeDays = Number(input.officeDays || 0);
+  const distanceKm = Number(input.distanceKm || 0);
+  const mainTransport = input.mainTransport || null;
+  const altTransport = input.altTransport || null;
+  const altFreqRaw = Number(input.altFreq || 0);
+  const altFreq = Math.min(Math.max(Number.isFinite(altFreqRaw) ? altFreqRaw : 0, 0), 1);
+
+  if (!officeDays || !distanceKm || !mainTransport) return 0;
+
+  const mainValue = factorValueByLabelWithFallback(
+    factors,
+    mainTransport,
+    "transport",
+    "commute.mainTransport",
+    "emission_g_per_distance"
+  );
+  const altValue = factorValueByLabelWithFallback(
+    factors,
+    altTransport,
+    "transport",
+    "commute.alternativeTransport",
+    "emission_g_per_distance"
+  );
+
+  const commuteG =
+    officeDays *
+    COMMUTE_WEEKS_PER_YEAR *
+    COMMUTE_ROUND_TRIPS_PER_DAY *
+    distanceKm *
+    (mainValue * (1 - altFreq) + altValue * altFreq);
+
+  return commuteG / 1000;
+}
+
+function computeCommuteKgFromSurveyRecord(survey, factors) {
+  const mainTransport = survey.transportMain || mapTransport(survey.transportMain);
+  const altTransport = survey.alternativeTransport || mapTransport(survey.alternativeTransport);
+
+  return computeCommuteKgFromValues(
+    {
+      officeDays: survey.officeDaysPerWeek,
+      distanceKm: survey.distanceKm,
+      mainTransport,
+      altTransport,
+      altFreq: survey.alternativeTransportFreq,
+    },
+    factors
+  );
+}
+
 module.exports = {
-  parseOfficeDays,
-  parseDistanceKm,
-  parseAltFreq,
-  parseFlightsPerYear,
-  findFactor,
-  findFirstFactor,
-  pickByIncludes,
-  toNumber,
   computeSurveyTotal,
+  computeCommuteKgFromSurveyRecord,
+  resolveMainTransportLabel,
+  resolveCarTypeLabel,
+  mapTransport,
+  mapHeatingType,
+  mapWarmWaterType,
+  parseFlightDistanceKm,
+  parseOfficeDays,
+  parseAltFreq,
+  parseDistanceKm,
+  parseFlightsPerYear,
 };

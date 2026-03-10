@@ -1,3 +1,5 @@
+const { computeCommuteKgFromSurveyRecord } = require("./calculation.service");
+
 function bucketFlights(flightsPerYear) {
 	const value = flightsPerYear ?? -1;
 	if (value <= 0) return "0";
@@ -8,7 +10,7 @@ function bucketFlights(flightsPerYear) {
 
 const FLIGHT_BUCKET_ORDER = ["0", "1-2", "2-5", ">5"];
 
-function buildSurveyAggregations(surveys) {
+function buildSurveyAggregations(surveys, factors = []) {
 	const byTransport = {};
 	const co2ByTransport = {};
 	const flights = {};
@@ -21,8 +23,10 @@ function buildSurveyAggregations(surveys) {
 		const transport = survey.transportMain || "UNKNOWN";
 		byTransport[transport] = (byTransport[transport] || 0) + 1;
 
+		const commuteKg = computeCommuteKgFromSurveyRecord(survey, factors);
+
 		co2ByTransport[transport] = co2ByTransport[transport] || { sum: 0, count: 0 };
-		co2ByTransport[transport].sum += Number(survey.totalCo2Kg || 0);
+		co2ByTransport[transport].sum += Number(commuteKg || 0);
 		co2ByTransport[transport].count += 1;
 
 		const flightBucket = bucketFlights(survey.flightsPerYear);
