@@ -12,6 +12,7 @@
   },
   "scripts": {
     "import:excel": "node services/import/import-excel.js",
+    "test": "node --test",
     "dev": "concurrently -k -n server,css -c green,cyan \"npm run dev:server\" \"npm run dev:css\"",
     "dev:server": "node server.js",
     "dev:css": "tailwindcss -c ../Frontend/tailwind.config.cjs -i ../Frontend/tailwind.input.css -o ../Frontend/style.css --watch",

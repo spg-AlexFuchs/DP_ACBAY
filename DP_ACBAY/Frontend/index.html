@@ -138,7 +138,24 @@
           </div>
 
           <!-- Charts Grid -->
-          <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div class="mt-5 grid gap-4 md:grid-cols-2">
+            <!-- Overall CO2 Areas Chart -->
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Gesamt-CO2 nach Bereichen (ohne Konsum)</div>
+              <div class="mb-2 text-[11px] text-slate-500">Hinweis: Gesamtsumme je Bereich (kg CO2/Jahr), Konsum ist hier ausgeblendet.</div>
+              <div class="h-56">
+                <canvas id="overallCo2Chart"></canvas>
+              </div>
+            </article>
+
+            <!-- Electricity Chart -->
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Ökostrom Nutzung</div>
+              <div class="h-56">
+                <canvas id="electricityChart"></canvas>
+              </div>
+            </article>
+
             <!-- Transport Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
               <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Transport-Verteilung</div>
@@ -147,19 +164,29 @@
               </div>
             </article>
 
+            <!-- CO2 Chart -->
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Pendel-CO2 Summe nach Transport</div>
+              <div class="mb-2 text-[11px] text-slate-500">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO2/Jahr).</div>
+              <div class="h-56">
+                <canvas id="transportCo2Chart"></canvas>
+              </div>
+            </article>
+
             <!-- Flight Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Flüge pro Jahr</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Flugstrecken-Verteilung</div>
               <div class="h-56">
                 <canvas id="flightChart"></canvas>
               </div>
             </article>
 
-            <!-- CO2 Chart -->
-            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3 md:col-span-2 xl:col-span-1">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Pendel-CO2 nach Transport</div>
+            <!-- Flight CO2 Chart -->
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">CO2 Summe nach Flügen</div>
+              <div class="mb-2 text-[11px] text-slate-500">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO2/Jahr).</div>
               <div class="h-56">
-                <canvas id="co2Chart"></canvas>
+                <canvas id="flightCo2Chart"></canvas>
               </div>
             </article>
 
@@ -171,13 +198,32 @@
               </div>
             </article>
 
-            <!-- Electricity Chart -->
+            <!-- Heating CO2 Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Ökostrom Nutzung</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">CO2 Summe nach Heizungsart</div>
+              <div class="mb-2 text-[11px] text-slate-500">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO2/Jahr).</div>
               <div class="h-56">
-                <canvas id="electricityChart"></canvas>
+                <canvas id="heatingCo2Chart"></canvas>
               </div>
             </article>
+
+            <!-- Warm Water Chart -->
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Warmwasser Erzeugung</div>
+              <div class="h-56">
+                <canvas id="warmWaterChart"></canvas>
+              </div>
+            </article>
+
+            <!-- Warm Water CO2 Chart -->
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">CO2 Summe nach Warmwasser Erzeugung</div>
+              <div class="mb-2 text-[11px] text-slate-500">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO2/Jahr).</div>
+              <div class="h-56">
+                <canvas id="warmWaterCo2Chart"></canvas>
+              </div>
+            </article>
+
           </div>
 
           <!-- Hover Info -->
@@ -232,9 +278,14 @@
 
       let transportChart;
       let flightChart;
-      let co2Chart;
+      let overallCo2Chart;
+      let transportCo2Chart;
       let heatingChart;
       let electricityChart;
+      let warmWaterChart;
+      let flightCo2Chart;
+      let heatingCo2Chart;
+      let warmWaterCo2Chart;
 
       // ==========================================
       // Storage Functions
@@ -418,15 +469,47 @@
         const displayTransportLabel = (label) => {
           if (label === "Elektroauto BEV EU Strommix") return "Elektroauto";
           if (label === "ÖPNV Bahn/Tram") return "Öffentliche Verkehrsmittel";
+          if (label === "Gas CNG") return "Gas";
+          if (label === "Flüssiggas LPG") return "Flüssiggas";
+          if (label === "Wasserstoff FCEV") return "Wasserstoff";
+          if (label === "Anderes Pendelfahrzeug") return "Sonstiges";
           return label;
         };
 
         const displayHeatingLabel = (label) => {
           if (label === "Heizöl extra leicht") return "Heizöl";
           if (label === "Wärmepumpe (EU-Strommix, JAZ 3)") return "Wärmepumpe";
-          if (label === "Erdgas (Brennwert)") return "Erdgas";
+          if (label === "Erdgas (Brennwert)") return "Gas";
           if (label === "Fernwärme Ø Österreich") return "Fernwärme";
           if (label === "Biomasse Pellets") return "Pellets";
+          if (label === "Biomasse Stückholz") return "Holzofen";
+          return label;
+        };
+
+        const displayWarmWaterLabel = (label) => {
+          if (label === "Heizöl extra leicht") return "Heizöl";
+          if (label === "Wärmepumpe (EU-Strommix, JAZ 3)") return "Wärmepumpe";
+          if (label === "Erdgas (Brennwert)") return "Gas";
+          if (label === "Fernwärme Ø Österreich") return "Fernwärme";
+          if (label === "Biomasse Pellets") return "Pellets";
+          if (label === "Strom Ö-Mix") return "Strom";
+          if (label === "Solarthermie") return "Solarthermie";
+          if (label === "UNKNOWN" || label === "Sonstiges") return "Sonstiges";
+          return label;
+        };
+
+        const displayFlightBucketLabel = (label) => {
+          if (label === "0") return "Nie";
+          if (label === "1-2") return "1-2";
+          if (label === "2-5") return "2-5";
+          if (label === "5-10") return "5-10";
+          return label;
+        };
+
+        const displayFlightDistanceLabel = (label) => {
+          if (label === "Kurzstrecke") return "Kurzstrecke";
+          if (label === "Mittelstrecke") return "Mittelstrecke";
+          if (label === "Langstrecke") return "Langstrecke";
           return label;
         };
 
@@ -439,13 +522,46 @@
           return grouped;
         };
 
+        const aggregateHeatingLabels = (sourceObj) => {
+          const grouped = {};
+          Object.entries(sourceObj || {}).forEach(([rawLabel, rawValue]) => {
+            const parts = String(rawLabel)
+              .split(/\s*\+\s*/)
+              .map((part) => part.trim())
+              .filter(Boolean);
+
+            const labels = parts.length ? parts : [rawLabel];
+            labels.forEach((label) => {
+              const displayLabel = displayHeatingLabel(label);
+              grouped[displayLabel] = (grouped[displayLabel] || 0) + Number(rawValue || 0);
+            });
+          });
+          return grouped;
+        };
+
+        const sortPairsDesc = (labels, data) => {
+          const pairs = labels.map((label, index) => ({ label, value: Number(data[index] || 0) }));
+          pairs.sort((a, b) => b.value - a.value);
+          return {
+            labels: pairs.map((p) => p.label),
+            data: pairs.map((p) => p.value),
+          };
+        };
+
         // agg: { byTransport: {...}, avgCo2ByTransport: {...}, flights: {...} ... }
         const transportGrouped = aggregateByDisplayLabel(agg.byTransport, displayTransportLabel);
         const transportLabels = Object.keys(transportGrouped);
         const transportData = transportLabels.map((label) => transportGrouped[label]);
 
-        const flightLabels = Object.keys(agg.flights || {});
-        const flightData = flightLabels.map((l) => agg.flights[l]);
+        const flightDistanceCounts = agg.flightsByDistance || {};
+        const flightLabelsRaw = Object.keys(flightDistanceCounts);
+        const flightLabels = flightLabelsRaw.map((label) => displayFlightDistanceLabel(label));
+        const flightData = flightLabelsRaw.map((label) => flightDistanceCounts[label]);
+        const noFlightsCount = Number((agg.flights || {})["0"] || 0);
+        if (noFlightsCount > 0) {
+          flightLabels.unshift("Keine Flüge");
+          flightData.unshift(noFlightsCount);
+        }
 
         const excludedCo2TransportLabels = new Set(["Zu Fuß", "Zu Fuss", "Fahrrad"]);
         const co2LabelsRaw = Object.keys(agg.avgCo2ByTransport || {}).filter(
@@ -453,17 +569,53 @@
         );
         const co2Labels = co2LabelsRaw.map((label) => displayTransportLabel(label));
         const co2Data = co2LabelsRaw.map((l) => agg.avgCo2ByTransport[l]);
-        const heatingLabelsRaw = Object.keys(agg.byHeating || {});
-        const heatingLabels = heatingLabelsRaw.map((label) => displayHeatingLabel(label));
-        const heatingData = heatingLabelsRaw.map((l) => agg.byHeating[l]);
+        const heatingGrouped = aggregateHeatingLabels(agg.byHeating);
+        const heatingLabels = Object.keys(heatingGrouped);
+        const heatingData = heatingLabels.map((label) => heatingGrouped[label]);
+        const warmWaterGrouped = aggregateByDisplayLabel(agg.byWarmWater, displayWarmWaterLabel);
+        const warmWaterLabels = Object.keys(warmWaterGrouped);
+        const warmWaterData = warmWaterLabels.map((label) => warmWaterGrouped[label]);
+
+        const flightCo2LabelsRaw = Object.keys(agg.avgCo2ByFlights || {});
+        const flightCo2Labels = flightCo2LabelsRaw.map((label) => displayFlightDistanceLabel(label));
+        const flightCo2Data = flightCo2LabelsRaw.map((label) => agg.avgCo2ByFlights[label]);
+
+        const heatingCo2Grouped = aggregateHeatingLabels(agg.avgCo2ByHeating || {});
+        const heatingCo2Labels = Object.keys(heatingCo2Grouped);
+        const heatingCo2Data = heatingCo2Labels.map((label) => heatingCo2Grouped[label]);
+
+        const warmWaterCo2Grouped = aggregateByDisplayLabel(agg.avgCo2ByWarmWater, displayWarmWaterLabel);
+        const warmWaterCo2Labels = Object.keys(warmWaterCo2Grouped);
+        const warmWaterCo2Data = warmWaterCo2Labels.map((label) => warmWaterCo2Grouped[label]);
+
+        const sortedTransportCo2 = sortPairsDesc(co2Labels, co2Data);
+        const sortedFlightCo2 = sortPairsDesc(flightCo2Labels, flightCo2Data);
+        const sortedHeatingCo2 = sortPairsDesc(heatingCo2Labels, heatingCo2Data);
+        const sortedWarmWaterCo2 = sortPairsDesc(warmWaterCo2Labels, warmWaterCo2Data);
+
+        const overallAreaLabels = ["Strom", "Heizung", "Warmwasser", "Transport", "Flüge"];
+        const co2Areas = agg.co2Areas || {};
+        const overallAreaData = [
+          Number(co2Areas.electricity || 0),
+          Number(co2Areas.heating || 0),
+          Number(co2Areas.warmWater || 0),
+          Number(co2Areas.transport || 0),
+          Number(co2Areas.flights || 0),
+        ];
+
         const electricityLabels = Object.keys(agg.byElectricity || {});
         const electricityData = electricityLabels.map((l) => agg.byElectricity[l]);
 
         if (transportChart) transportChart.destroy();
         if (flightChart) flightChart.destroy();
-        if (co2Chart) co2Chart.destroy();
+        if (overallCo2Chart) overallCo2Chart.destroy();
+        if (transportCo2Chart) transportCo2Chart.destroy();
         if (heatingChart) heatingChart.destroy();
         if (electricityChart) electricityChart.destroy();
+        if (warmWaterChart) warmWaterChart.destroy();
+        if (flightCo2Chart) flightCo2Chart.destroy();
+        if (heatingCo2Chart) heatingCo2Chart.destroy();
+        if (warmWaterCo2Chart) warmWaterCo2Chart.destroy();
 
         transportChart = new Chart(document.getElementById("transportChart"), {
           type: "pie",
@@ -471,7 +623,8 @@
             labels: transportLabels,
             datasets: [{
               data: transportData,
-              backgroundColor: ["#dc2626", "#991b1b", "#374151", "#1f2937", "#111827", "#6b7280"],
+              radius: 78,
+              backgroundColor: ["#f97316", "#fb923c", "#fdba74", "#ea580c", "#c2410c", "#9a3412"],
               borderColor: "#ffffff",
               borderWidth: 2,
               hoverOffset: 24,
@@ -481,46 +634,130 @@
         });
 
         flightChart = new Chart(document.getElementById("flightChart"), {
-          type: "doughnut",
+          type: "pie",
           data: {
             labels: flightLabels,
             datasets: [{
               data: flightData,
-              backgroundColor: ["#111827", "#dc2626", "#991b1b", "#374151", "#1f2937"],
+              radius: 78,
+              backgroundColor: ["#a855f7", "#9333ea", "#7e22ce", "#6d28d9", "#581c87"],
               borderColor: "#ffffff",
               borderWidth: 2,
-              hoverOffset: 20,
+              hoverOffset: 24,
             }],
           },
           options: chartOptions((label, value) => `Flüge ${label}: ${value} Personen`),
         });
 
-        co2Chart = new Chart(document.getElementById("co2Chart"), {
+        overallCo2Chart = new Chart(document.getElementById("overallCo2Chart"), {
+          type: "pie",
+          data: {
+            labels: overallAreaLabels,
+            datasets: [{
+              data: overallAreaData,
+              radius: 78,
+              backgroundColor: ["#16a34a", "#0f766e", "#0ea5e9", "#f97316", "#a855f7"],
+              borderColor: "#ffffff",
+              borderWidth: 2,
+              hoverOffset: 24,
+            }],
+          },
+          options: chartOptions((label, value) => `${label}: ${value} kg CO2 gesamt`),
+        });
+
+        transportCo2Chart = new Chart(document.getElementById("transportCo2Chart"), {
           type: "bar",
           data: {
-            labels: co2Labels,
+            labels: sortedTransportCo2.labels,
             datasets: [{
-              label: "kg CO2",
-              data: co2Data,
-              backgroundColor: "rgba(220, 38, 38, 0.85)",
-              borderColor: "#dc2626",
+              label: "kg CO2 gesamt",
+              data: sortedTransportCo2.data,
+              backgroundColor: "rgba(249, 115, 22, 0.85)",
+              borderColor: "#f97316",
               borderWidth: 1,
               borderRadius: 8,
             }],
           },
           options: {
-            ...chartOptions((label, value) => `${label}: ${value} kg CO2`),
+            ...chartOptions((label, value) => `${label}: ${value} kg CO2 gesamt`),
             scales: { x: { ticks: { color: "#334155" } }, y: { beginAtZero: true, ticks: { color: "#334155" } } },
           },
         });
 
         heatingChart = new Chart(document.getElementById("heatingChart"), {
-          type: "bar",
+          type: "pie",
           data: {
             labels: heatingLabels,
             datasets: [{
-              label: "Anzahl",
               data: heatingData,
+              radius: 78,
+              backgroundColor: ["#0f766e", "#14b8a6", "#0ea5a4", "#0d9488", "#155e75", "#334155"],
+              borderColor: "#ffffff",
+              borderWidth: 2,
+              hoverOffset: 24,
+            }],
+          },
+          options: chartOptions((label, value) => `${label}: ${value} Personen`),
+        });
+
+        electricityChart = new Chart(document.getElementById("electricityChart"), {
+          type: "pie",
+          data: {
+            labels: electricityLabels,
+            datasets: [{
+              data: electricityData,
+              radius: 78,
+              backgroundColor: ["#16a34a", "#0f766e", "#0ea5e9", "#64748b", "#1e293b"],
+              borderColor: "#ffffff",
+              borderWidth: 2,
+              hoverOffset: 24,
+            }],
+          },
+          options: chartOptions((label, value) => `${label}: ${value} Personen`),
+        });
+
+        warmWaterChart = new Chart(document.getElementById("warmWaterChart"), {
+          type: "pie",
+          data: {
+            labels: warmWaterLabels,
+            datasets: [{
+              data: warmWaterData,
+              radius: 78,
+              backgroundColor: ["#0ea5e9", "#0284c7", "#0369a1", "#0891b2", "#64748b"],
+              borderColor: "#ffffff",
+              borderWidth: 2,
+              hoverOffset: 24,
+            }],
+          },
+          options: chartOptions((label, value) => `${label}: ${value} Personen`),
+        });
+
+        flightCo2Chart = new Chart(document.getElementById("flightCo2Chart"), {
+          type: "bar",
+          data: {
+            labels: sortedFlightCo2.labels,
+            datasets: [{
+              label: "kg CO2 gesamt",
+              data: sortedFlightCo2.data,
+              backgroundColor: "rgba(168, 85, 247, 0.85)",
+              borderColor: "#a855f7",
+              borderWidth: 1,
+              borderRadius: 8,
+            }],
+          },
+          options: {
+            ...chartOptions((label, value) => `${label}: ${value} kg CO2 gesamt`),
+            scales: { x: { ticks: { color: "#334155" } }, y: { beginAtZero: true, ticks: { color: "#334155" } } },
+          },
+        });
+
+        heatingCo2Chart = new Chart(document.getElementById("heatingCo2Chart"), {
+          type: "bar",
+          data: {
+            labels: sortedHeatingCo2.labels,
+            datasets: [{
+              label: "kg CO2 gesamt",
+              data: sortedHeatingCo2.data,
               backgroundColor: "rgba(15, 118, 110, 0.85)",
               borderColor: "#0f766e",
               borderWidth: 1,
@@ -528,24 +765,28 @@
             }],
           },
           options: {
-            ...chartOptions((label, value) => `${label}: ${value} Personen`),
+            ...chartOptions((label, value) => `${label}: ${value} kg CO2 gesamt`),
             scales: { x: { ticks: { color: "#334155" } }, y: { beginAtZero: true, ticks: { color: "#334155" } } },
           },
         });
 
-        electricityChart = new Chart(document.getElementById("electricityChart"), {
-          type: "doughnut",
+        warmWaterCo2Chart = new Chart(document.getElementById("warmWaterCo2Chart"), {
+          type: "bar",
           data: {
-            labels: electricityLabels,
+            labels: sortedWarmWaterCo2.labels,
             datasets: [{
-              data: electricityData,
-              backgroundColor: ["#16a34a", "#0f766e", "#0ea5e9", "#64748b", "#1e293b"],
-              borderColor: "#ffffff",
-              borderWidth: 2,
-              hoverOffset: 20,
+              label: "kg CO2 gesamt",
+              data: sortedWarmWaterCo2.data,
+              backgroundColor: "rgba(14, 165, 233, 0.85)",
+              borderColor: "#0ea5e9",
+              borderWidth: 1,
+              borderRadius: 8,
             }],
           },
-          options: chartOptions((label, value) => `${label}: ${value} Personen`),
+          options: {
+            ...chartOptions((label, value) => `${label}: ${value} kg CO2 gesamt`),
+            scales: { x: { ticks: { color: "#334155" } }, y: { beginAtZero: true, ticks: { color: "#334155" } } },
+          },
         });
       }
 

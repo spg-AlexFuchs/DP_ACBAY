@@ -16,7 +16,18 @@ function toText(value) {
 function toNumber(value) {
   if (typeof value === "number") return value;
   if (value === null || value === undefined) return null;
-  const text = String(value).replace(",", ".").trim();
+  const text = String(value).replace(/,/g, ".").replace(/[–—]/g, "-").trim();
+
+  // Supports range notation from source sheets (e.g. "0-50") by using midpoint.
+  const rangeMatch = text.match(/^(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)$/);
+  if (rangeMatch) {
+    const min = Number(rangeMatch[1]);
+    const max = Number(rangeMatch[2]);
+    if (Number.isFinite(min) && Number.isFinite(max)) {
+      return (min + max) / 2;
+    }
+  }
+
   const parsed = Number(text);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -208,6 +219,18 @@ async function importSurvey(factors, userId) {
       ])
     );
     const fireworkText = toText(getCell(row, headerIndex, ["Wie oft verwenden Sie Feuerwerk?"]));
+    const heatingSavingsText = toText(
+      getCell(row, headerIndex, [
+        "Machen Sie etwas, um beim Heizen Energie und CO₂ zu sparen?",
+        "Machen Sie etwas, um beim Heizen Energie und CO2 zu sparen?",
+      ])
+    );
+    const flightAvoidanceText = toText(
+      getCell(row, headerIndex, ["Verzichten Sie auf Flugreisen oder nutzen Alternativen wie Zug?"])
+    );
+    const shortHaulTrainAlternativeText = toText(
+      getCell(row, headerIndex, ["Würden Sie bei Kurzstrecken Alternativen wie Zug nutzen?"])
+    );
     const shoppingTransportEcoChoiceText = toText(
       getCell(row, headerIndex, [
         "Achten Sie beim Kauf darauf, dass Produkte möglichst umweltfreundlich transportiert werden (z. B. Schiff statt Flugzeug)?",
@@ -244,8 +267,11 @@ async function importSurvey(factors, userId) {
 
     const mappedTransport =
       calc.resolveMainTransportLabel(transportMainText, carTypeText) || toText(transportMainText) || "UNKNOWN";
-    const mappedHeating = calc.mapHeatingType(heatingTypeText) || toText(heatingTypeText) || "UNKNOWN";
-    const mappedWarmWater = calc.mapWarmWaterType(warmWaterTypeText) || toText(warmWaterTypeText) || "UNKNOWN";
+    const mappedHeatingTypes = calc.mapHeatingTypes(heatingTypeText);
+    const mappedHeating = mappedHeatingTypes.length
+      ? mappedHeatingTypes.join(" + ")
+      : (calc.mapHeatingType(heatingTypeText) || toText(heatingTypeText) || "UNKNOWN");
+    const mappedWarmWater = calc.mapWarmWaterType(warmWaterTypeText) || (warmWaterTypeText ? "Sonstiges" : "UNKNOWN");
 
     const totalCo2Kg = calc.computeSurveyTotal(
       {
@@ -261,6 +287,9 @@ async function importSurvey(factors, userId) {
         warmWaterTypeText,
         usesGreenElectricityText,
         smartElectricityUsageText,
+        heatingSavingsText,
+        flightAvoidanceText,
+        shortHaulTrainAlternativeText,
         shoppingTransportEcoChoiceText,
         usesEnergyEfficientAppliancesText,
         usesSmartDevicesText,
@@ -278,7 +307,7 @@ async function importSurvey(factors, userId) {
         officeDaysPerWeek: calc.parseOfficeDays(officeDaysText),
         transportMain: mappedTransport,
         alternativeTransportFreq: calc.parseAltFreq(alternativeTransportFreqText),
-        alternativeTransport: calc.mapTransport(alternativeTransportText),
+        alternativeTransport: calc.mapTransport(alternativeTransportText) || (alternativeTransportText ? "Anderes Pendelfahrzeug" : null),
         distanceKm: calc.parseDistanceKm(distanceText),
         carType: calc.resolveCarTypeLabel(carTypeText),
         flightsPerYear: calc.parseFlightsPerYear(flightsPerYearText, { forStorage: true }),
@@ -340,4 +369,5 @@ module.exports = {
   importEmissionFactors,
   importSurvey,
   ensureDefaultUser,
+  toNumber,
 };

@@ -8,6 +8,11 @@ const PDFDocument = require("pdfkit");
 const { PrismaClient } = require("@prisma/client");
 const { auth, requireRole } = require("../middleware/auth.middleware");
 const { ROLE } = require("../services/auth.services");
+const {
+  importEmissionFactors,
+  importSurvey,
+  ensureDefaultUser,
+} = require("../services/import/import-excel");
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -294,6 +299,21 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     fs.mkdirSync(uploadsDir, { recursive: true });
     fs.writeFileSync(path.join(uploadsDir, storedName), req.file.buffer);
 
+    const isExcelUpload = ext.toLowerCase() === ".xlsx";
+    let importTriggered = false;
+    if (isExcelUpload) {
+      const dataDir = path.join(__dirname, "..", "data");
+      fs.mkdirSync(dataDir, { recursive: true });
+      const surveyFilePath = path.join(dataDir, "auswertung_umfrage.xlsx");
+      fs.writeFileSync(surveyFilePath, req.file.buffer);
+
+      // Keep DB in sync with the replaced survey workbook.
+      const factors = await importEmissionFactors();
+      const userId = await ensureDefaultUser();
+      await importSurvey(factors, userId);
+      importTriggered = true;
+    }
+
     const created = await prisma.uploadedFile.create({
       data: {
         originalName: req.file.originalname,
@@ -315,7 +335,11 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       },
     });
 
-    return res.json(created);
+    return res.json({
+      ...created,
+      replacedSurveyFile: isExcelUpload,
+      importTriggered,
+    });
   } catch (err) {
     console.error("upload failed:", err);
     return res.status(500).json({ error: "Upload fehlgeschlagen" });
