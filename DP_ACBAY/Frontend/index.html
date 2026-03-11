@@ -33,6 +33,9 @@
             <a id="adminLink" href="admin.html" class="hidden btn-header-back">
               Zum Admin-Panel
             </a>
+            <a id="hrLink" href="hr.html" class="hidden btn-header-back">
+              Zum HR-Bereich
+            </a>
             <a id="myAreaLink" href="mein-bereich.html" class="hidden btn-header-back">
               Mein Bereich
             </a>
@@ -260,6 +263,7 @@
       const topActions = document.getElementById("topActions");
       const logoutBtn = document.getElementById("logoutBtn");
       const adminLink = document.getElementById("adminLink");
+      const hrLink = document.getElementById("hrLink");
       const myAreaLink = document.getElementById("myAreaLink");
       const toggleAuth = document.getElementById("toggleAuth");
       const authTitle = document.getElementById("authTitle");
@@ -322,6 +326,10 @@
         return role === "ADMIN" || role === "SUPER_ADMIN";
       }
 
+      function isHrRole(role) {
+        return role === "HR";
+      }
+
       function isPrivateMode() {
         return Boolean(getToken());
       }
@@ -361,6 +369,7 @@
         const privateMode = isPrivateMode();
         const role = privateMode ? (liveRole || getRole()) : null;
         const isAdmin = isAdminRole(role);
+        const isHr = isHrRole(role);
         const isEmployee = privateMode && role === "EMPLOYEE";
 
         modeLabel.textContent = privateMode ? `Eingeloggt (${role || "?"})` : "Öffentlich";
@@ -368,6 +377,7 @@
         topActions.classList.toggle("hidden", !privateMode);
         topActions.classList.toggle("flex", privateMode);
         adminLink.classList.toggle("hidden", !(privateMode && isAdmin));
+        hrLink.classList.toggle("hidden", !(privateMode && isHr));
         myAreaLink.classList.toggle("hidden", !isEmployee);
         updateAuthFormsVisibility(privateMode, role);
 

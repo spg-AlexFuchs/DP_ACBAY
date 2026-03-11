@@ -28,15 +28,15 @@
 
       <main class="mt-6">
         <section class="surface-card">
-          <h2 class="text-xl font-semibold">Umfragewerte (manuelle Eingabe)</h2>
-          <p class="mt-1 text-sm text-slate-500">Fragen und Antwortoptionen entsprechen der Originalumfrage – nur Felder, die in die CO₂-Berechnung einfließen.</p>
+            <h2 class="text-xl font-semibold">Umfragewerte (manuelle Eingabe)</h2>
+          <p class="mt-1 text-sm text-slate-500">Fragen und Felder sind auf das aktuelle Excel-Schema abgestimmt.</p>
 
           <form class="mt-4 space-y-6" id="surveyForm">
             <div>
               <h3 class="text-base font-semibold text-slate-900">Mobilität</h3>
               <div class="mt-3 grid gap-4 md:grid-cols-2">
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Wie oft sind Sie pro Woche im Büro?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Bürotage pro Woche</span>
                   <select name="officeDaysPerWeek" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="0">0 Tage</option>
                     <option value="1">1 Tag</option>
@@ -47,7 +47,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Wie weit ist Ihr Arbeitsplatz von zuhause entfernt?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Pendelstrecke</span>
                   <select name="distanceKm" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="">– bitte wählen –</option>
                     <option value="unter10">Unter 10 km</option>
@@ -59,7 +59,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Mit welchem Verkehrsmittel kommen Sie in der Regel zur Arbeit?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Pendelverkehrsmittel</span>
                   <select name="transportMain" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="">– bitte wählen –</option>
                     <option value="Eigenes Auto">Eigenes Auto</option>
@@ -85,7 +85,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Nutzen Sie auch alternative Verkehrsmittel an manchen Tagen?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Häufigkeit alternatives Verkehrsmittel</span>
                   <select name="alternativeTransportFreq" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Nie">Nie</option>
                     <option value="Selten">Selten</option>
@@ -94,7 +94,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Wenn ja, welche? (alternatives Verkehrsmittel)</span>
+                  <span class="mb-1 block font-medium text-slate-700">Alternatives Verkehrsmittel</span>
                   <select name="alternativeTransport" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="">Keines</option>
                     <option value="Fahrrad">Fahrrad</option>
@@ -104,6 +104,16 @@
                     <option value="Sonstiges">Sonstiges</option>
                   </select>
                 </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium text-slate-700">Pendelzeit</span>
+                  <select name="pendelzeit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">– bitte wählen –</option>
+                    <option value="unter 15 min">Unter 15 Minuten</option>
+                    <option value="15-30 min">15–30 Minuten</option>
+                    <option value="30-60 min">30–60 Minuten</option>
+                    <option value="über 60 min">Über 60 Minuten</option>
+                  </select>
+                </label>
               </div>
             </div>
 
@@ -111,7 +121,7 @@
               <h3 class="text-base font-semibold text-slate-900">Flugreisen</h3>
               <div class="mt-3 grid gap-4 md:grid-cols-2">
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Verzichten Sie auf Flugreisen oder nutzen Alternativen wie Zug?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Verzicht auf Flugreisen</span>
                   <select name="flightAvoidance" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja, fast immer">Ja, fast immer</option>
                     <option value="Manchmal">Manchmal</option>
@@ -164,8 +174,8 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Machen Sie etwas, um beim Heizen Energie und CO₂ zu sparen?</span>
-                  <select name="heatingSaving" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                  <span class="mb-1 block font-medium text-slate-700">Heizungsregelung</span>
+                  <select name="heatingSavings" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja, regelmäßig (z. B. Thermostat, Heizungsregelung)">Ja, regelmäßig (z. B. Thermostat, Heizungsregelung)</option>
                     <option value="Manchmal">Manchmal</option>
                     <option value="Nie">Nie</option>
@@ -183,7 +193,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Nutzen Sie zu Hause Ökostrom?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Ökostromnutzung</span>
                   <select name="usesGreenElectricity" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja">Ja</option>
                     <option value="Teilweise">Teilweise</option>
@@ -192,8 +202,18 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Nutzen Sie Strom bewusst zu Zeiten, in denen viel erneuerbare Energie verfügbar ist?</span>
-                  <select name="smartElectricityUsage" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                  <span class="mb-1 block font-medium text-slate-700">Ökostrom Art</span>
+                  <select name="greenElectricityType" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">– bitte wählen –</option>
+                    <option value="Tarif Ökostrom">Ökostrom-Tarif</option>
+                    <option value="PV Eigenverbrauch">PV-Eigenverbrauch</option>
+                    <option value="Energiegemeinschaft">Energiegemeinschaft</option>
+                    <option value="Unbekannt">Unbekannt</option>
+                  </select>
+                </label>
+                <label class="text-sm">
+                  <span class="mb-1 block font-medium text-slate-700">Lastoptimierung</span>
+                  <select name="loadOptimization" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja, oft">Ja, oft</option>
                     <option value="Selten">Selten</option>
                     <option value="Nein, nie">Nein, nie</option>
@@ -206,7 +226,7 @@
               <h3 class="text-base font-semibold text-slate-900">Verhalten &amp; Konsum</h3>
               <div class="mt-3 grid gap-4 md:grid-cols-2">
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Wie oft verwenden Sie Feuerwerk?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Feuerwerk Nutzung</span>
                   <select name="fireworkPerYear" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Nie">Nie</option>
                     <option value="1 mal im Jahr">Einmal im Jahr</option>
@@ -214,7 +234,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Achten Sie beim Kauf darauf, dass Produkte möglichst umweltfreundlich transportiert werden?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Nachhaltiger Transport</span>
                   <select name="shoppingTransportEcoChoice" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja">Ja</option>
                     <option value="Manchmal">Manchmal</option>
@@ -222,7 +242,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Nutzen Sie energiesparende Haushaltsgeräte (z. B. Kühlschrank, Waschmaschine)?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Energieeffiziente Geräte</span>
                   <select name="usesEnergyEfficientAppliances" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja, alle">Ja, alle</option>
                     <option value="Einige">Einige</option>
@@ -238,7 +258,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Kaufen Sie gerne Produkte aus der Region oder lokal hergestellte Sachen?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Regionaler Kauf</span>
                   <select name="buysRegionalProducts" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja, oft">Ja, oft</option>
                     <option value="Manchmal">Manchmal</option>
@@ -246,7 +266,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Achten Sie bei Kleidung auf langlebige oder nachhaltige Materialien?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Nachhaltige Kleidung</span>
                   <select name="buysSustainableClothing" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja, immer">Ja, immer</option>
                     <option value="Manchmal">Manchmal</option>
@@ -254,7 +274,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Kaufen Sie bewusst weniger online, um Verpackung und Transportweg zu sparen?</span>
+                  <span class="mb-1 block font-medium text-slate-700">Bewusster Konsum</span>
                   <select name="avoidsOnlineShopping" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja, oft">Ja, oft</option>
                     <option value="Manchmal">Manchmal</option>
@@ -345,6 +365,12 @@
       }
 
       function mapFlightsToOption(flightsPerYear) {
+        const raw = String(flightsPerYear ?? "").toLowerCase();
+        if (raw.includes("nie") || raw === "0") return "0";
+        if (raw.includes("1-2") || raw.includes("1–2")) return "1-2";
+        if (raw.includes("2-5") || raw.includes("2–5")) return "2-5";
+        if (raw.includes("5-10") || raw.includes("5–10")) return "5-10";
+
         const f = Number(flightsPerYear);
         if (!Number.isFinite(f) || f <= 0) return "0";
         if (f <= 2) return "1-2";
@@ -353,6 +379,11 @@
       }
 
       function mapFlightDistanceToOption(flightDistanceKm) {
+        const raw = String(flightDistanceKm ?? "").toLowerCase();
+        if (raw.includes("kurz")) return "Kurzstrecke";
+        if (raw.includes("mittel")) return "Mittelstrecke";
+        if (raw.includes("lang")) return "Langstrecke";
+
         const d = Number(flightDistanceKm);
         if (!Number.isFinite(d)) return "";
         if (d < 1500) return "Kurzstrecke";
@@ -361,6 +392,14 @@
       }
 
       function mapSmartUsageToOption(smartUsage) {
+        if (smartUsage === null || smartUsage === undefined) return "";
+        const text = String(smartUsage).trim();
+        if (text) {
+          const lower = text.toLowerCase();
+          if (lower.includes("ja")) return "Ja, oft";
+          if (lower.includes("selten") || lower.includes("manchmal")) return "Selten";
+          if (lower.includes("nein") || lower.includes("nie")) return "Nein, nie";
+        }
         const n = Number(smartUsage);
         if (!Number.isFinite(n)) return "";
         if (n >= 0.3) return "Ja, oft";
@@ -373,6 +412,7 @@
 
         setSelectByPreferred("officeDaysPerWeek", [survey.officeDaysPerWeek]);
         setSelectByPreferred("distanceKm", [mapDistanceToOption(survey.distanceKm)]);
+        setSelectByPreferred("pendelzeit", [survey.commuteTime]);
 
         setSelectByPreferred("transportMain", [
           survey.transportMain,
@@ -396,6 +436,7 @@
         ]);
 
         setSelectByPreferred("alternativeTransportFreq", [
+          survey.alternativeTransportFreq,
           Number(survey.alternativeTransportFreq) >= 0.32 ? "Ja, oft" : null,
           Number(survey.alternativeTransportFreq) >= 0.03 ? "Manchmal" : null,
           Number(survey.alternativeTransportFreq) > 0 ? "Selten" : null,
@@ -412,6 +453,8 @@
 
         setSelectByPreferred("flightsPerYear", [mapFlightsToOption(survey.flightsPerYear)]);
         setSelectByPreferred("flightDistance", [mapFlightDistanceToOption(survey.flightDistanceKm)]);
+        setSelectByPreferred("flightAvoidance", [survey.flightAvoidance]);
+        setSelectByPreferred("shortHaulTrainAlternative", [survey.shortHaulTrainAlternative]);
         setSelectByPreferred("heatingType", [
           survey.heatingType,
           survey.heatingType?.includes("Wärmepumpe") ? "Wärmepumpe" : null,
@@ -433,9 +476,12 @@
         ]);
 
         setSelectByPreferred("usesGreenElectricity", [survey.usesGreenElectricity]);
-        setSelectByPreferred("smartElectricityUsage", [mapSmartUsageToOption(survey.smartElectricityUsage)]);
+        setSelectByPreferred("greenElectricityType", [survey.greenElectricityType]);
+        setSelectByPreferred("heatingSavings", [survey.heatingSavings]);
+        setSelectByPreferred("loadOptimization", [mapSmartUsageToOption(survey.loadOptimization || survey.smartElectricityUsage)]);
 
         setSelectByPreferred("fireworkPerYear", [
+          survey.fireworkPerYear,
           Number(survey.fireworkPerYear) <= 0 ? "Nie" : null,
           Number(survey.fireworkPerYear) === 1 ? "1 mal im Jahr" : null,
           Number(survey.fireworkPerYear) > 1 ? "Öfter als einmal im Jahr" : null,
