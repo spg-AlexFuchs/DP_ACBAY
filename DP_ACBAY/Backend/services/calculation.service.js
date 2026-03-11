@@ -858,6 +858,14 @@ function computeSurveyComponentKgFromRecord(survey, factors) {
         ["emission_g_per_distance", "emission_g_per_flight"]
       );
       flightKg = (factorValue * Number(parsedFlightsPerYear)) / 1000;
+
+      const flightAvoidanceFactor = parseFlightAvoidanceFactor(survey.flightAvoidance);
+      flightKg *= flightAvoidanceFactor;
+
+      const isShortDistance = Number(parsedDistance) > 0 && Number(parsedDistance) < 1500;
+      if (isShortDistance) {
+        flightKg *= parseShortHaulTrainFactor(survey.shortHaulTrainAlternative);
+      }
     }
   }
 

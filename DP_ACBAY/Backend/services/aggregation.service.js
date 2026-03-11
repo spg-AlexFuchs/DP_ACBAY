@@ -56,7 +56,6 @@ function buildSurveyAggregations(surveys, factors = []) {
 		electricity: 0,
 		consumption: 0,
 	};
-	const byMonth = {};
 	let totalCo2 = 0;
 
 	surveys.forEach((survey) => {
@@ -121,44 +120,31 @@ function buildSurveyAggregations(surveys, factors = []) {
 		byElectricity[electricity] = (byElectricity[electricity] || 0) + 1;
 
 		totalCo2 += Number(survey.totalCo2Kg || 0);
-
-		if (survey.createdAt) {
-			const date = new Date(survey.createdAt);
-			const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-			byMonth[monthKey] = byMonth[monthKey] || { sum: 0, count: 0 };
-			byMonth[monthKey].sum += Number(survey.totalCo2Kg || 0);
-			byMonth[monthKey].count += 1;
-		}
 	});
 
-	const avgCo2ByTransport = {};
+	const co2SumByTransport = {};
 	Object.keys(co2ByTransport).forEach((transport) => {
 		const entry = co2ByTransport[transport];
-		avgCo2ByTransport[transport] = Number(entry.sum.toFixed(2));
+		co2SumByTransport[transport] = Number(entry.sum.toFixed(2));
 	});
 
-	const avgCo2ByFlights = {};
+	const co2SumByFlights = {};
 	Object.keys(co2ByFlights).forEach((bucket) => {
 		const entry = co2ByFlights[bucket];
-		avgCo2ByFlights[bucket] = Number(entry.sum.toFixed(2));
+		co2SumByFlights[bucket] = Number(entry.sum.toFixed(2));
 	});
 
-	const avgCo2ByHeating = {};
+	const co2SumByHeating = {};
 	Object.keys(co2ByHeating).forEach((heating) => {
 		const entry = co2ByHeating[heating];
-		avgCo2ByHeating[heating] = Number(entry.sum.toFixed(2));
+		co2SumByHeating[heating] = Number(entry.sum.toFixed(2));
 	});
 
-	const avgCo2ByWarmWater = {};
+	const co2SumByWarmWater = {};
 	Object.keys(co2ByWarmWater).forEach((warmWater) => {
 		const entry = co2ByWarmWater[warmWater];
-		avgCo2ByWarmWater[warmWater] = Number(entry.sum.toFixed(2));
+		co2SumByWarmWater[warmWater] = Number(entry.sum.toFixed(2));
 	});
-
-	const months = Object.keys(byMonth).sort();
-	const avgCo2ByMonth = months.map((month) =>
-		Number((byMonth[month].sum / byMonth[month].count).toFixed(2))
-	);
 
 	const orderedFlights = {};
 	FLIGHT_BUCKET_ORDER.forEach((bucket) => {
@@ -174,8 +160,8 @@ function buildSurveyAggregations(surveys, factors = []) {
 
 	const orderedCo2ByFlights = {};
 	FLIGHT_DISTANCE_ORDER.forEach((bucket) => {
-		if (avgCo2ByFlights[bucket] !== undefined) {
-			orderedCo2ByFlights[bucket] = avgCo2ByFlights[bucket];
+		if (co2SumByFlights[bucket] !== undefined) {
+			orderedCo2ByFlights[bucket] = co2SumByFlights[bucket];
 		}
 	});
 
@@ -195,10 +181,10 @@ function buildSurveyAggregations(surveys, factors = []) {
 		])
 	);
 
-	const scaledAvgCo2ByTransport = scaleAndRoundValues(avgCo2ByTransport);
-	const scaledAvgCo2ByFlights = scaleAndRoundValues(orderedCo2ByFlights);
-	const scaledAvgCo2ByHeating = scaleAndRoundValues(avgCo2ByHeating);
-	const scaledAvgCo2ByWarmWater = scaleAndRoundValues(avgCo2ByWarmWater);
+	const scaledCo2ByTransport = scaleAndRoundValues(co2SumByTransport);
+	const scaledCo2ByFlights = scaleAndRoundValues(orderedCo2ByFlights);
+	const scaledCo2ByHeating = scaleAndRoundValues(co2SumByHeating);
+	const scaledCo2ByWarmWater = scaleAndRoundValues(co2SumByWarmWater);
 	const normalizedCo2Areas = Object.fromEntries(
 		Object.entries(co2Areas).map(([key, value]) => [key, Number(value || 0) * co2AreaScale])
 	);
@@ -210,18 +196,16 @@ function buildSurveyAggregations(surveys, factors = []) {
 		count: surveys.length,
 		avgCo2Kg: surveys.length ? Number((totalCo2 / surveys.length).toFixed(2)) : 0,
 		byTransport,
-		avgCo2ByTransport: scaledAvgCo2ByTransport,
-		avgCo2ByFlights: scaledAvgCo2ByFlights,
+		avgCo2ByTransport: scaledCo2ByTransport,
+		avgCo2ByFlights: scaledCo2ByFlights,
 		flightsByDistance: orderedFlightsByDistance,
-		avgCo2ByHeating: scaledAvgCo2ByHeating,
-		avgCo2ByWarmWater: scaledAvgCo2ByWarmWater,
+		avgCo2ByHeating: scaledCo2ByHeating,
+		avgCo2ByWarmWater: scaledCo2ByWarmWater,
 		flights: orderedFlights,
 		byHeating,
 		byWarmWater,
 		byElectricity,
 		co2Areas: roundedCo2Areas,
-		months,
-		avgCo2ByMonth,
 	};
 }
 

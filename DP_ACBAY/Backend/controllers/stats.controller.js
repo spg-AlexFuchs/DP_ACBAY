@@ -247,29 +247,41 @@ async function saveMySurvey(req, res) {
     const b = req.body || {};
 
     const str = (v) => (v !== null && v !== undefined ? String(v).trim() : "");
+    const pick = (...keys) => {
+      for (const key of keys) {
+        if (b[key] !== undefined && b[key] !== null && String(b[key]).trim() !== "") {
+          return str(b[key]);
+        }
+      }
+      return "";
+    };
 
-    const officeDaysText              = str(b.officeDaysPerWeek);
-    const transportMainText           = str(b.transportMain);
-    const carTypeText                 = str(b.carType);
-    const alternativeTransportFreqText = str(b.alternativeTransportFreq);
-    const alternativeTransportText    = str(b.alternativeTransport);
-    const distanceText                = str(b.distanceKm);
-    const flightsPerYearText          = str(b.flightsPerYear);
-    const flightDistanceText          = str(b.flightDistance);
-    const flightAvoidanceText         = str(b.flightAvoidance);
-    const shortHaulTrainAlternativeText = str(b.shortHaulTrainAlternative);
-    const heatingTypeText             = str(b.heatingType);
-    const heatingSavingsText          = str(b.heatingSaving);
-    const warmWaterTypeText           = str(b.warmWaterType);
-    const usesGreenElectricityText    = str(b.usesGreenElectricity);
-    const smartElectricityUsageText   = str(b.smartElectricityUsage);
-    const fireworkText                = str(b.fireworkPerYear);
-    const shoppingTransportEcoChoiceText     = str(b.shoppingTransportEcoChoice);
-    const usesEnergyEfficientAppliancesText  = str(b.usesEnergyEfficientAppliances);
-    const usesSmartDevicesText        = str(b.usesSmartDevices);
-    const buysRegionalProductsText    = str(b.buysRegionalProducts);
-    const buysSustainableClothingText = str(b.buysSustainableClothing);
-    const avoidsOnlineShoppingText    = str(b.avoidsOnlineShopping);
+    const employeeNameText            = pick("name", "employeeName");
+    const officeDaysText              = pick("officeDaysPerWeek", "officeDays", "bueroTageProWoche");
+    const transportMainText           = pick("transportMain", "pendelverkehrsmittel");
+    const carTypeText                 = pick("carType", "autoantrieb");
+    const alternativeTransportFreqText = pick("alternativeTransportFreq", "haeufigkeitAlternativesVerkehrsmittel");
+    const alternativeTransportText    = pick("alternativeTransport", "alternativesVerkehrsmittel");
+    const distanceText                = pick("distanceKm", "pendelstrecke");
+    const commuteTimeText             = pick("pendelzeit", "commuteTime");
+    const flightsPerYearText          = pick("flightsPerYear", "fluegeProJahr");
+    const flightDistanceText          = pick("flightDistance", "flightDistanceKm", "flugstrecken");
+    const flightAvoidanceText         = pick("flightAvoidance", "verzichtAufFlugreisen");
+    const shortHaulTrainAlternativeText = pick("shortHaulTrainAlternative");
+    const heatingTypeText             = pick("heatingType", "heizungsart");
+    const heatingSavingsText          = pick("heatingSaving", "heatingSavings", "heizungsregelung");
+    const warmWaterTypeText           = pick("warmWaterType", "warmwassererzeugung");
+    const usesGreenElectricityText    = pick("usesGreenElectricity", "oekostromnutzung");
+    const greenElectricityTypeText    = pick("greenElectricityType", "oekostromArt");
+    const loadOptimizationText        = pick("loadOptimization", "lastoptimierung");
+    const smartElectricityUsageText   = pick("smartElectricityUsage", "loadOptimization", "lastoptimierung");
+    const fireworkText                = pick("fireworkPerYear", "feuerwerkNutzung");
+    const shoppingTransportEcoChoiceText     = pick("shoppingTransportEcoChoice", "nachhaltigerTransport");
+    const usesEnergyEfficientAppliancesText  = pick("usesEnergyEfficientAppliances", "energieeffizienteGeraete");
+    const usesSmartDevicesText        = pick("usesSmartDevices", "smarteGeraete");
+    const buysRegionalProductsText    = pick("buysRegionalProducts", "regionalerKauf");
+    const buysSustainableClothingText = pick("buysSustainableClothing", "nachhaltigeKleidung");
+    const avoidsOnlineShoppingText    = pick("avoidsOnlineShopping", "bewussterKonsum");
 
     // Load emission factors from DB
     const factorRows = await prisma.emissionFactor.findMany();
@@ -311,18 +323,25 @@ async function saveMySurvey(req, res) {
 
     const data = {
       mitarbeiter: req.authUser.email || null,
+      employeeName: employeeNameText || null,
       officeDaysPerWeek: calc.parseOfficeDays(officeDaysText),
       transportMain: transportMainText || "UNKNOWN",
       alternativeTransportFreq: alternativeTransportFreqText || null,
       alternativeTransport: alternativeTransportText || null,
       distanceKm: calc.parseDistanceKm(distanceText),
+      commuteTime: commuteTimeText || null,
       carType: carTypeText || null,
       flightsPerYear: flightsPerYearText || null,
       flightDistanceKm: flightDistanceText || null,
+      flightAvoidance: flightAvoidanceText || null,
+      shortHaulTrainAlternative: shortHaulTrainAlternativeText || null,
       heatingType: heatingTypeText || "UNKNOWN",
       warmWaterType: warmWaterTypeText || "UNKNOWN",
+      heatingSavings: heatingSavingsText || null,
       usesGreenElectricity: usesGreenElectricityText || null,
+      greenElectricityType: greenElectricityTypeText || null,
       smartElectricityUsage: smartElectricityUsageText || null,
+      loadOptimization: loadOptimizationText || null,
       fireworkPerYear: fireworkText || null,
       shoppingTransportEcoChoice: shoppingTransportEcoChoiceText || null,
       usesEnergyEfficientAppliances: usesEnergyEfficientAppliancesText || null,

@@ -14,6 +14,7 @@ function baseFactors() {
   return [
     { category: "transport", label: "PKW Benzin", valueNumber: 200, unit: "g/km" },
     { category: "transport", label: "Anderes Pendelfahrzeug", valueNumber: 150, unit: "g/km" },
+    { category: "flight", label: "Flugreisen Kurzstrecke (<1500 km)", valueNumber: 250000, unit: "g/pkm" },
 
     { category: "heating", label: "Erdgas (Brennwert)", valueNumber: 100, unit: "g CO2/kWh" },
     { category: "heating", label: "Strom Ö-Mix", valueNumber: 200, unit: "g CO2/kWh Strom" },
@@ -139,4 +140,97 @@ test("buildSurveyAggregations keeps co2 area sum aligned with average total", ()
   const expectedTotal = Number(agg.avgCo2Kg) * Number(agg.count);
 
   assert.ok(Math.abs(areasTotal - expectedTotal) < 0.2);
+});
+
+test("computeSurveyTotal supports new schema naming without short-haul field", () => {
+  const factors = baseFactors();
+
+  const total = computeSurveyTotal(
+    {
+      officeDaysText: "4",
+      transportMainText: "Eigenes Auto",
+      alternativeTransportFreqText: "Manchmal",
+      alternativeTransportText: "Öffentliche Verkehrsmittel",
+      distanceText: "20-30",
+      carTypeText: "Hybrid",
+      flightsPerYearText: "1-2",
+      flightDistanceText: "Kurzstrecke",
+      flightAvoidanceText: "Manchmal",
+      heatingTypeText: "Gas",
+      heatingSavingsText: "Manchmal",
+      warmWaterTypeText: "Strom",
+      usesGreenElectricityText: "Ja",
+      smartElectricityUsageText: "Selten",
+      fireworkText: "Nie",
+      shoppingTransportEcoChoiceText: "Ja",
+      usesEnergyEfficientAppliancesText: "Einige",
+      usesSmartDevicesText: "Ja",
+      regionalProductsText: "Ja, oft",
+      sustainableClothingText: "Manchmal",
+      avoidsOnlineShoppingText: "Manchmal",
+      // intentionally missing: shortHaulTrainAlternativeText
+    },
+    factors
+  );
+
+  assert.equal(Number.isFinite(total), true);
+  assert.ok(total > 0);
+});
+
+test("computeSurveyComponentKgFromRecord applies short-haul train alternative factor", () => {
+  const factors = baseFactors();
+
+  const noTrainAlternative = computeSurveyComponentKgFromRecord(
+    {
+      officeDaysPerWeek: 2,
+      distanceKm: 10,
+      transportMain: "PKW Benzin",
+      alternativeTransport: null,
+      alternativeTransportFreq: "Nie",
+      flightsPerYear: "2",
+      flightDistanceKm: "Kurzstrecke",
+      flightAvoidance: "Nein",
+      shortHaulTrainAlternative: "Nein",
+      heatingType: "Erdgas (Brennwert)",
+      warmWaterType: "Strom Ö-Mix",
+      usesGreenElectricity: "Nein",
+      smartElectricityUsage: "Nie",
+      fireworkPerYear: "Nie",
+      shoppingTransportEcoChoice: null,
+      usesEnergyEfficientAppliances: null,
+      usesSmartDevices: null,
+      buysRegionalProducts: null,
+      buysSustainableClothing: null,
+      avoidsOnlineShopping: null,
+    },
+    factors
+  );
+
+  const withTrainAlternative = computeSurveyComponentKgFromRecord(
+    {
+      officeDaysPerWeek: 2,
+      distanceKm: 10,
+      transportMain: "PKW Benzin",
+      alternativeTransport: null,
+      alternativeTransportFreq: "Nie",
+      flightsPerYear: "2",
+      flightDistanceKm: "Kurzstrecke",
+      flightAvoidance: "Nein",
+      shortHaulTrainAlternative: "Ja",
+      heatingType: "Erdgas (Brennwert)",
+      warmWaterType: "Strom Ö-Mix",
+      usesGreenElectricity: "Nein",
+      smartElectricityUsage: "Nie",
+      fireworkPerYear: "Nie",
+      shoppingTransportEcoChoice: null,
+      usesEnergyEfficientAppliances: null,
+      usesSmartDevices: null,
+      buysRegionalProducts: null,
+      buysSustainableClothing: null,
+      avoidsOnlineShopping: null,
+    },
+    factors
+  );
+
+  assert.ok(withTrainAlternative.flightKg < noTrainAlternative.flightKg);
 });

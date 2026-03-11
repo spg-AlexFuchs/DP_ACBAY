@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EVN AG | HR Bereich</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="evn-colors.css" />
+</head>
+<body class="min-h-screen bg-white text-slate-900 flex flex-col has-fixed-footer">
+  <div class="w-full flex-1 bg-white px-6 py-6 md:p-10">
+    <header class="page-header">
+      <div class="page-header-inner">
+        <div>
+          <div class="page-header-badge">HR</div>
+          <h1 class="page-header-title">HR Bereich</h1>
+          <p class="page-header-subtitle">Hier kann HR die Survey-Daten als CSV, XLSX oder PDF exportieren.</p>
+        </div>
+        <div class="flex flex-col items-end gap-2">
+          <div class="mode-indicator">
+            <div class="mode-indicator-label">Modus</div>
+            <div id="modeLabel" class="mode-indicator-value">Eingeloggt (?)</div>
+            <div id="whoami" class="mode-indicator-sub">Prüfe Zugriff...</div>
+          </div>
+          <a href="index.html" class="btn-header-back">← Zurück zum Dashboard</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="mt-6">
+      <section class="surface-card">
+        <h2 class="text-xl font-semibold">Datenexport</h2>
+        <p class="mt-1 text-sm text-slate-500">Downloads erfolgen mit deinen HR-Rechten.</p>
+
+        <div class="mt-4 grid gap-3 md:grid-cols-3">
+          <button id="btnExportCsv" class="rounded-lg bg-red-700 px-4 py-3 text-sm font-semibold text-white hover:bg-red-800">CSV herunterladen</button>
+          <button id="btnExportXlsx" class="rounded-lg bg-red-700 px-4 py-3 text-sm font-semibold text-white hover:bg-red-800">XLSX herunterladen</button>
+          <button id="btnExportPdf" class="rounded-lg bg-red-700 px-4 py-3 text-sm font-semibold text-white hover:bg-red-800">PDF herunterladen</button>
+        </div>
+
+        <p id="hrMessage" class="mt-4 min-h-[1.25rem] text-sm text-slate-600"></p>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer border-t border-slate-300">
+    <div class="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+      <nav class="footer-nav-links">
+        <a href="datenschutz.html" class="footer-link">Datenschutz</a>
+        <a href="kontakt.html" class="footer-link">Kontakt</a>
+        <a href="esg.html" class="footer-link">ESG</a>
+        <a href="co2.html" class="footer-link">CO2</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+    const API_URL = "http://localhost:3000";
+    const token = localStorage.getItem("token");
+    const modeLabel = document.getElementById("modeLabel");
+    const whoami = document.getElementById("whoami");
+    const messageEl = document.getElementById("hrMessage");
+
+    function setMessage(text, isError = false) {
+      messageEl.textContent = text;
+      messageEl.className = isError
+        ? "mt-4 min-h-[1.25rem] text-sm text-red-700"
+        : "mt-4 min-h-[1.25rem] text-sm text-emerald-700";
+    }
+
+    async function requireHr() {
+      if (!token) {
+        window.location.href = "index.html";
+        return false;
+      }
+
+      const res = await fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        window.location.href = "index.html";
+        return false;
+      }
+
+      const me = await res.json();
+      modeLabel.textContent = `Eingeloggt (${me.role || "?"})`;
+      whoami.textContent = me.email || "";
+      localStorage.setItem("role", me.role || "");
+
+      const allowed = me.role === "HR" || me.role === "ADMIN" || me.role === "SUPER_ADMIN";
+      if (!allowed) {
+        setMessage("Kein HR-Zugriff.", true);
+        window.location.href = "index.html";
+        return false;
+      }
+
+      return true;
+    }
+
+    async function downloadExport(path, fallbackName) {
+      const res = await fetch(`${API_URL}${path}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        return setMessage(data.error || "Export fehlgeschlagen", true);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const contentDisposition = res.headers.get("Content-Disposition") || "";
+      const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
+      a.href = url;
+      a.download = fileNameMatch ? fileNameMatch[1] : fallbackName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setMessage(`Export erstellt: ${a.download}`);
+    }
+
+    document.getElementById("btnExportCsv").addEventListener("click", () => downloadExport("/hr/export.csv", "surveys.csv"));
+    document.getElementById("btnExportXlsx").addEventListener("click", () => downloadExport("/hr/export.xlsx", "surveys.xlsx"));
+    document.getElementById("btnExportPdf").addEventListener("click", () => downloadExport("/hr/export.pdf", "surveys.pdf"));
+
+    requireHr();
+  </script>
+</body>
+</html>

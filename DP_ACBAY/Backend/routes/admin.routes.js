@@ -91,30 +91,42 @@ function toGermanDateTime(value) {
   return new Date(value).toLocaleString("de-DE");
 }
 
+function pickExportValue(...values) {
+  for (const value of values) {
+    if (value !== null && value !== undefined && value !== "") return value;
+  }
+  return "";
+}
+
 function mapSurveyToGermanExportRow(survey) {
   return {
     "ID": survey.id,
     "Benutzer-ID": survey.userId,
     "E-Mail": survey.user?.email || survey.mitarbeiter || "",
     "Mitarbeiter": survey.mitarbeiter || survey.user?.email || "",
-    "Office Days per Week": normalizeExportValue(survey.officeDaysPerWeek),
-    "Verkehrsmittel": normalizeExportValue(survey.transportMain),
+    "Name": normalizeExportValue(survey.employeeName),
+    "Bürotage pro Woche": normalizeExportValue(survey.officeDaysPerWeek),
+    "Pendelverkehrsmittel": normalizeExportValue(survey.transportMain),
     "Alternative Verkehrsmittel Nutzung": normalizeExportValue(survey.alternativeTransportFreq),
     "Alternatives Verkehrsmittel": normalizeExportValue(survey.alternativeTransport),
-    "Distanz zur Arbeit (km)": normalizeExportValue(survey.distanceKm),
-    "Auto-Antrieb": normalizeExportValue(survey.carType),
+    "Pendelstrecke (km)": normalizeExportValue(survey.distanceKm),
+    "Pendelzeit": normalizeExportValue(survey.commuteTime),
+    "Autoantrieb": normalizeExportValue(survey.carType),
+    "Verzicht Flugreisen": normalizeExportValue(survey.flightAvoidance),
+    "Kurzstrecken Zug Alternative": normalizeExportValue(survey.shortHaulTrainAlternative),
     "Flüge pro Jahr": normalizeExportValue(survey.flightsPerYear),
     "Flugdistanz": normalizeExportValue(survey.flightDistanceKm),
     "Heizungsart": normalizeExportValue(survey.heatingType),
-    "Warmwasser": normalizeExportValue(survey.warmWaterType),
-    "Ökostrom": normalizeExportValue(survey.usesGreenElectricity),
-    "Smart-Stromnutzung": normalizeExportValue(survey.smartElectricityUsage),
+    "Heizungsregelung": normalizeExportValue(survey.heatingSavings),
+    "Warmwassererzeugung": normalizeExportValue(survey.warmWaterType),
+    "Ökostromnutzung": normalizeExportValue(survey.usesGreenElectricity),
+    "Ökostrom Art": normalizeExportValue(survey.greenElectricityType),
+    "Lastoptimierung": normalizeExportValue(pickExportValue(survey.loadOptimization, survey.smartElectricityUsage)),
     "Feuerwerk pro Jahr": normalizeExportValue(survey.fireworkPerYear),
-    "CO2-Wichtigkeit": normalizeExportValue(survey.co2Importance),
-    "Einkauf/Transport öko": normalizeExportValue(survey.shoppingTransportEcoChoice),
-    "Energiesparende Geräte": normalizeExportValue(survey.usesEnergyEfficientAppliances),
+    "Nachhaltiger Transport": normalizeExportValue(survey.shoppingTransportEcoChoice),
+    "Energieeffiziente Geräte": normalizeExportValue(survey.usesEnergyEfficientAppliances),
     "Smarte Geräte": normalizeExportValue(survey.usesSmartDevices),
-    "Regionale Produkte": normalizeExportValue(survey.buysRegionalProducts),
+    "Regionaler Kauf": normalizeExportValue(survey.buysRegionalProducts),
     "Nachhaltige Kleidung": normalizeExportValue(survey.buysSustainableClothing),
     "Online-Shopping vermeiden": normalizeExportValue(survey.avoidsOnlineShopping),
     "CO2 gesamt (kg)": normalizeExportValue(survey.totalCo2Kg),

@@ -65,6 +65,15 @@ function getCell(row, headerIndex, aliases) {
   return null;
 }
 
+function mapCombinedFlightAnswerToShortHaul(value) {
+  const normalized = normalizeText(value);
+  if (!normalized) return null;
+  if (normalized.includes("ja")) return "Ja";
+  if (normalized.includes("manchmal")) return "Manchmal";
+  if (normalized.includes("nein")) return "Nein";
+  return null;
+}
+
 function findColumnName(headers, aliases = []) {
   const normalizedHeaders = headers.map((h) => ({ raw: h, norm: normalizeText(h) }));
   for (const alias of aliases) {
@@ -186,89 +195,159 @@ async function importSurvey(factors, userId) {
   await prisma.survey.deleteMany();
 
   for (const row of rows) {
+    const emailText = toText(getCell(row, headerIndex, ["Email", "E-Mail"]));
+    const nameText = toText(getCell(row, headerIndex, ["Name"]));
     const officeDaysText = toText(
-      getCell(row, headerIndex, ["Wie oft sind Sie pro Woche im Büro?", "Wie oft sind Sie pro Woche im Buro?"])
+      getCell(row, headerIndex, [
+        "Bürotage pro Woche",
+        "Burotage pro Woche",
+        "Wie oft sind Sie pro Woche im Büro?",
+        "Wie oft sind Sie pro Woche im Buro?",
+      ])
     );
     const transportMainText = toText(
-      getCell(row, headerIndex, ["Mit welchem Verkehrsmittel kommen Sie in der Regel zur Arbeit?"])
+      getCell(row, headerIndex, [
+        "Verkehrsmittel",
+        "Pendelverkehrsmittel",
+        "Mit welchem Verkehrsmittel kommen Sie in der Regel zur Arbeit?",
+      ])
     );
     const alternativeTransportFreqText = toText(
-      getCell(row, headerIndex, ["Nutzen Sie auch alternative Verkehrsmittel an manchen Tagen?"])
+      getCell(row, headerIndex, [
+        "Häufigkeit alternatives Vekehrsmittel",
+        "Haufigkeit alternatives Vekehrsmittel",
+        "Häufigkeit alternatives Verkehrsmittel",
+        "Haufigkeit alternatives Verkehrsmittel",
+        "Nutzen Sie auch alternative Verkehrsmittel an manchen Tagen?",
+      ])
     );
     const alternativeTransportText = toText(
-      getCell(row, headerIndex, ["Wenn ja, welche alternativen Verkehrsmittel?"])
+      getCell(row, headerIndex, ["alternatives Verkehrsmittel", "Wenn ja, welche alternativen Verkehrsmittel?"])
     );
     const distanceText = toText(
-      getCell(row, headerIndex, ["Wie weit ist Ihr Arbeitsplatz von zuhause entfernt?"])
+      getCell(row, headerIndex, ["Pendelstrecke", "Wie weit ist Ihr Arbeitsplatz von zuhause entfernt?"])
+    );
+    const commuteTimeText = toText(
+      getCell(row, headerIndex, ["Pendelzeit"])
     );
     const carTypeText = toText(
-      getCell(row, headerIndex, ["Falls Sie ein Auto benutzen: Welchen Antrieb hat Ihr Auto?"])
+      getCell(row, headerIndex, ["Autoantrieb", "Falls Sie ein Auto benutzen: Welchen Antrieb hat Ihr Auto?"])
     );
     const flightsPerYearText = toText(
-      getCell(row, headerIndex, ["Wie oft fliegen Sie im Jahr?"])
+      getCell(row, headerIndex, ["Flüge pro Jahr", "Fluge pro Jahr", "Wie oft fliegen Sie im Jahr?"])
     );
     const flightDistanceText = toText(
-      getCell(row, headerIndex, ["Wenn Sie fliegen, welche Strecken fliegen Sie eher?"])
+      getCell(row, headerIndex, ["Flugstrecken", "Wenn Sie fliegen, welche Strecken fliegen Sie eher?"])
     );
-    const heatingTypeText = toText(getCell(row, headerIndex, ["Wie heizen Sie zu Hause?"]));
+    const heatingTypeText = toText(getCell(row, headerIndex, ["Heizungsart", "Wie heizen Sie zu Hause?"]));
     const warmWaterTypeText = toText(
-      getCell(row, headerIndex, ["Wie wird Ihr Warmwasser zu Hause erzeugt?"])
+      getCell(row, headerIndex, ["Warmwassererzeugung", "Wie wird Ihr Warmwasser zu Hause erzeugt?"])
     );
     const usesGreenElectricityText = toText(
-      getCell(row, headerIndex, ["Nutzen Sie zu Hause Ökostrom", "Nutzen Sie zu Hause Okostrom"])
+      getCell(row, headerIndex, [
+        "Ökostromnutzung",
+        "Okostromnutzung",
+        "Nutzen Sie zu Hause Ökostrom",
+        "Nutzen Sie zu Hause Okostrom",
+      ])
+    );
+    const greenElectricityTypeText = toText(
+      getCell(row, headerIndex, ["Ökostrom Art", "Okostrom Art"])
+    );
+    const loadOptimizationText = toText(
+      getCell(row, headerIndex, [
+        "Lastoptimiereung",
+        "Lastoptimierung",
+        "Lastoptimiereung/Lastmanagement/intelligente Stromnutzung",
+        "Lastoptimierung/Lastmanagement/intelligente Stromnutzung",
+        "Smart-Stromnutzung",
+      ])
     );
     const smartElectricityUsageText = toText(
       getCell(row, headerIndex, [
+        "Smart-Stromnutzung",
+        "Lastoptimiereung/Lastmanagement/intelligente Stromnutzung",
+        "Lastoptimierung/Lastmanagement/intelligente Stromnutzung",
         "Nutzen Sie Strom bewusst zu Zeiten, in denen viel erneuerbare Energie verfügbar ist (z. B. mittags bei PV-Strom)?",
         "Nutzen Sie Strom bewusst zu Zeiten, in denen viel erneuerbare Energie verfugbar ist (z. B. mittags bei PV-Strom)?",
       ])
-    );
-    const fireworkText = toText(getCell(row, headerIndex, ["Wie oft verwenden Sie Feuerwerk?"]));
+    ) || loadOptimizationText;
+    const fireworkText = toText(getCell(row, headerIndex, ["Feuerwerk Nutzung", "Wie oft verwenden Sie Feuerwerk?"]));
     const heatingSavingsText = toText(
       getCell(row, headerIndex, [
+        "Heizungsregelung",
         "Machen Sie etwas, um beim Heizen Energie und CO₂ zu sparen?",
         "Machen Sie etwas, um beim Heizen Energie und CO2 zu sparen?",
       ])
     );
+    const combinedFlightBehaviorText = toText(
+      getCell(row, headerIndex, [
+        "Verzicht auf Flugreisen/ Zug als Alternative",
+      ])
+    );
     const flightAvoidanceText = toText(
-      getCell(row, headerIndex, ["Verzichten Sie auf Flugreisen oder nutzen Alternativen wie Zug?"])
-    );
+      getCell(row, headerIndex, [
+        "Verzicht auf Flugreisen",
+        "Verzicht Flugreisen",
+        "Verzichten Sie auf Flugreisen oder nutzen Alternativen wie Zug?",
+        "Verzicht auf Flugreisen/ Zug als Alternative",
+      ])
+    ) || combinedFlightBehaviorText;
     const shortHaulTrainAlternativeText = toText(
-      getCell(row, headerIndex, ["Würden Sie bei Kurzstrecken Alternativen wie Zug nutzen?"])
-    );
+      getCell(row, headerIndex, [
+        "Kurzstrecken Zug Alternative",
+        "Würden Sie bei Kurzstrecken Alternativen wie Zug nutzen?",
+      ])
+    ) || mapCombinedFlightAnswerToShortHaul(combinedFlightBehaviorText);
     const shoppingTransportEcoChoiceText = toText(
       getCell(row, headerIndex, [
+        "Nachhaltiger Transport",
         "Achten Sie beim Kauf darauf, dass Produkte möglichst umweltfreundlich transportiert werden (z. B. Schiff statt Flugzeug)?",
         "Achten Sie beim Kauf darauf, dass Produkte möglichst umweltfreundlich transportiert werden (z. B. Schiff statt Flugzeug)?",
       ])
     );
     const usesEnergyEfficientAppliancesText = toText(
       getCell(row, headerIndex, [
+        "Energieeffiziente Geräte",
         "Nutzen Sie energiesparende Haushaltsgeräte (z. B. Kühlschrank, Waschmaschine)?",
         "Nutzen Sie energiesparende Haushaltsgeräte (z. B. Kühlschrank, Waschmaschine)?",
       ])
     );
     const usesSmartDevicesText = toText(
       getCell(row, headerIndex, [
+        "smarte Geräte",
         "Nutzen Sie smarte Geräte, die Strom sparen (z.B. programmierbare Thermostate, smarte Waschmaschine)?",
         "Nutzen Sie smarte Geräte, die Strom sparen (z. B. programmierbare Thermostate, smarte Waschmaschine)?",
       ])
     );
     const buysRegionalProductsText = toText(
-      getCell(row, headerIndex, ["Kaufen Sie gerne Produkte aus der Region oder lokal hergestellte Sachen?"])
+      getCell(row, headerIndex, ["Regionaler Kauf", "Kaufen Sie gerne Produkte aus der Region oder lokal hergestellte Sachen?"])
     );
     const buysSustainableClothingText = toText(
-      getCell(row, headerIndex, ["Achten Sie bei Kleidung auf langlebige oder nachhaltige Materialien?"])
+      getCell(row, headerIndex, ["Nachhaltige Kleidung", "Achten Sie bei Kleidung auf langlebige oder nachhaltige Materialien?"])
     );
     const avoidsOnlineShoppingText = toText(
-      getCell(row, headerIndex, ["Kaufen Sie bewusst weniger online, um Verpackung und Transportweg zu sparen?"])
+      getCell(row, headerIndex, ["Bewusster Konsum", "Kaufen Sie bewusst weniger online, um Verpackung und Transportweg zu sparen?"])
     );
-    const co2ImportanceText = toText(
-      getCell(row, headerIndex, [
-        "Wie wichtig ist Ihnen das Thema CO2-Einsparung? (1 sehr wichtig – 6 gar nicht wichtig)",
-        "Wie wichtig ist Ihnen das Thema CO2-Einsparung? (1 sehr wichtig - 6 gar nicht wichtig)",
-      ])
-    );
+
+    const hasMeaningfulSurveyData = [
+      officeDaysText,
+      transportMainText,
+      distanceText,
+      commuteTimeText,
+      flightsPerYearText,
+      flightDistanceText,
+      flightAvoidanceText,
+      heatingTypeText,
+      warmWaterTypeText,
+      usesGreenElectricityText,
+      loadOptimizationText,
+      fireworkText,
+    ].some((value) => value !== null && value !== undefined && String(value).trim() !== "");
+
+    if (!hasMeaningfulSurveyData) {
+      continue;
+    }
 
     const totalCo2Kg = calc.computeSurveyTotal(
       {
@@ -301,19 +380,26 @@ async function importSurvey(factors, userId) {
     await prisma.survey.create({
       data: {
         userId,
-        mitarbeiter: importUser?.email || null,
+        mitarbeiter: emailText || importUser?.email || null,
+        employeeName: nameText || null,
         officeDaysPerWeek: calc.parseOfficeDays(officeDaysText),
         transportMain: transportMainText || "UNKNOWN",
         alternativeTransportFreq: alternativeTransportFreqText || null,
         alternativeTransport: alternativeTransportText || null,
         distanceKm: calc.parseDistanceKm(distanceText),
+        commuteTime: commuteTimeText || null,
         carType: carTypeText || null,
         flightsPerYear: flightsPerYearText || null,
         flightDistanceKm: flightDistanceText || null,
+        flightAvoidance: flightAvoidanceText || null,
+        shortHaulTrainAlternative: shortHaulTrainAlternativeText || null,
         heatingType: heatingTypeText || "UNKNOWN",
         warmWaterType: warmWaterTypeText || "UNKNOWN",
+        heatingSavings: heatingSavingsText || null,
         usesGreenElectricity: usesGreenElectricityText || null,
+        greenElectricityType: greenElectricityTypeText || null,
         smartElectricityUsage: smartElectricityUsageText || null,
+        loadOptimization: loadOptimizationText || null,
         fireworkPerYear: fireworkText || null,
         shoppingTransportEcoChoice: shoppingTransportEcoChoiceText || null,
         usesEnergyEfficientAppliances: usesEnergyEfficientAppliancesText || null,
@@ -321,7 +407,6 @@ async function importSurvey(factors, userId) {
         buysRegionalProducts: buysRegionalProductsText || null,
         buysSustainableClothing: buysSustainableClothingText || null,
         avoidsOnlineShopping: avoidsOnlineShoppingText || null,
-        co2Importance: toNumber(co2ImportanceText),
         totalCo2Kg: Number.isFinite(totalCo2Kg) ? totalCo2Kg : null,
       },
     });
