@@ -358,7 +358,7 @@ module.exports = [
   },
   {
     "category": "consumption",
-    "label": "Konsumgüter Durschnittswert",
+    "label": "Konsumgüter Durchschnittswert",
     "valueNumber": 1.7,
     "unit": "t CO2e/Jahr" // in t
   },
@@ -380,11 +380,7 @@ module.exports = [
     "valueNumber": -0.1,
     "unit": "t CO2e/Jahr" // in t
   },
-   {"category": "consumption",
-    "label": "Nachhaltige Kleidung nie",
-    "valueNumber": 0,
-    "unit": "t CO2e/Jahr" // in t
-  },
+ 
   {
     "category": "consumption",
     "label": "Regionaler Einkauf oft",

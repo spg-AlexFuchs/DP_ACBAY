@@ -30,7 +30,7 @@ function getUnitGroup(unit) {
   if (!norm) return "unknown";
   if (norm.includes("t co2") && norm.includes("jahr")) return "annual_tonnes";
   if (norm.includes("kwh") && norm.includes("jahr")) return "annual_energy_kwh";
-  if (norm.includes("pro flug")) return "emission_g_per_flight";
+  if (norm.includes("pro flug") || norm.includes("/flug")) return "emission_g_per_flight";
   if (norm.startsWith("g") && norm.includes("/kwh")) return "emission_g_per_kwh";
   if (norm.startsWith("g") && (norm.includes("/km") || norm.includes("/pkm"))) {
     return "emission_g_per_distance";
@@ -123,6 +123,18 @@ function categoryAverageFactorValue(factors, category, expectedUnitGroup) {
 function factorValueByLabelWithFallback(factors, label, category, context, expectedUnitGroup) {
   if (!label) return 0;
 
+  if (normalizeText(label) === normalizeText(PUBLIC_TRANSPORT_AVERAGE_LABEL)) {
+    const busCandidates = findFactorsByLabel(factors, "ÖPNV Bus Diesel").filter((x) => Number.isFinite(x.valueNumber));
+    const railCandidates = findFactorsByLabel(factors, "ÖPNV Bahn/Tram").filter((x) => Number.isFinite(x.valueNumber));
+
+    const bus = busCandidates.find((x) => unitGroupMatches(getUnitGroup(x.unit), expectedUnitGroup));
+    const rail = railCandidates.find((x) => unitGroupMatches(getUnitGroup(x.unit), expectedUnitGroup));
+
+    if (bus && rail) {
+      return (bus.valueNumber + rail.valueNumber) / 2;
+    }
+  }
+
   const directCandidates = findFactorsByLabel(factors, label).filter((x) => Number.isFinite(x.valueNumber));
   if (directCandidates.length) {
     const compatible = directCandidates.find((x) => unitGroupMatches(getUnitGroup(x.unit), expectedUnitGroup));
@@ -162,7 +174,6 @@ const DISTANCE_MAP = new Map([
 
 const ALT_FREQ_MAP = new Map([
   ["oft", 1 / 3],
-  ["mittel", 0.2],
   ["selten", 0.1],
   ["manchmal", 1 / 30],
   ["nie", 0],
@@ -184,29 +195,18 @@ const FLIGHT_DISTANCE_MAP = new Map([
   ["langstrecke", "Flugreisen Langstrecke (>3500 km)"],
 ]);
 
-const SMART_ELECTRICITY_MAX_REDUCTION = 0.15;
 const NO_ADJUSTMENT = "__NO_ADJUSTMENT__";
 const SOME_APPLIANCES = "__SOME_APPLIANCES__";
 const NO_CAR = "__NO_CAR__";
+const PUBLIC_TRANSPORT_AVERAGE_LABEL = "ÖPNV Durchschnitt";
 const OTHER_HEATING = "__OTHER_HEATING__";
 const OTHER_WARM_WATER = "__OTHER_WARM_WATER__";
 const APPLIANCES_SOME_SHARE = 0.5;
-const PENALTY_SUSTAINABLE_CLOTHING_NO = "__PENALTY_SUSTAINABLE_CLOTHING_NO__";
-const PENALTY_REGIONAL_PRODUCTS_NO = "__PENALTY_REGIONAL_PRODUCTS_NO__";
-const PENALTY_AVOIDS_ONLINE_NO = "__PENALTY_AVOIDS_ONLINE_NO__";
-const PENALTY_SHOPPING_TRANSPORT_NO = "__PENALTY_SHOPPING_TRANSPORT_NO__";
-
-const PENALTY_TONS = {
-  [PENALTY_SUSTAINABLE_CLOTHING_NO]: 0.1,
-  [PENALTY_REGIONAL_PRODUCTS_NO]: 0.06,
-  [PENALTY_AVOIDS_ONLINE_NO]: 0.07,
-  [PENALTY_SHOPPING_TRANSPORT_NO]: 0.1,
-};
 
 const TRANSPORT_MAP = new Map([
   ["pkw benzin", "PKW Benzin"],
   ["auto benzin", "PKW Benzin"],
-  ["eigenes auto", "PKW Benzin"],
+  ["eigenes auto", "Auto"],
   ["pkw diesel", "PKW Diesel"],
   ["auto diesel", "PKW Diesel"],
   ["hybrid", "Hybrid HEV"],
@@ -215,12 +215,21 @@ const TRANSPORT_MAP = new Map([
   ["elektro", "Elektroauto BEV EU Strommix"],
   ["eauto", "Elektroauto BEV EU Strommix"],
   ["e auto", "Elektroauto BEV EU Strommix"],
-  ["firmenwagen", "PKW Benzin"],
+  ["firmenwagen", "Auto"],
   ["bus", "ÖPNV Bus Diesel"],
-  ["offis", "ÖPNV Bahn/Tram"],
-  ["oeffis", "ÖPNV Bahn/Tram"],
-  ["offentliche verkehrsmittel", "ÖPNV Bahn/Tram"],
-  ["oeffentliche verkehrsmittel", "ÖPNV Bahn/Tram"],
+  ["ubahn", "ÖPNV Bahn/Tram"],
+  ["u-bahn", "ÖPNV Bahn/Tram"],
+  ["straßenbahn", "ÖPNV Bahn/Tram"],
+  ["strassenbahn", "ÖPNV Bahn/Tram"],
+  ["badnerbahn", "ÖPNV Bahn/Tram"],
+  ["offis", PUBLIC_TRANSPORT_AVERAGE_LABEL],
+  ["oeffis", PUBLIC_TRANSPORT_AVERAGE_LABEL],
+  ["offentliche verkehrsmittel", PUBLIC_TRANSPORT_AVERAGE_LABEL],
+  ["oeffentliche verkehrsmittel", PUBLIC_TRANSPORT_AVERAGE_LABEL],
+  ["öffentliche verkehrsmittel", PUBLIC_TRANSPORT_AVERAGE_LABEL],
+  ["offentlicheverkehrsmittel", PUBLIC_TRANSPORT_AVERAGE_LABEL],
+  ["oeffentlicheverkehrsmittel", PUBLIC_TRANSPORT_AVERAGE_LABEL],
+  ["öffentlicheverkehrsmittel", PUBLIC_TRANSPORT_AVERAGE_LABEL],
   ["zug", "ÖPNV Bahn/Tram"],
   ["bahn", "ÖPNV Bahn/Tram"],
   ["tram", "ÖPNV Bahn/Tram"],
@@ -234,7 +243,7 @@ const TRANSPORT_MAP = new Map([
   ["zu fuss", "Zu Fuß"],
   ["gehen", "Zu Fuß"],
   ["sonstig", "Anderes Pendelfahrzeug"],
-  ["auto", "PKW Benzin"],
+  ["auto", "Auto"],
 ]);
 
 const CAR_TYPE_MAP = new Map([
@@ -298,13 +307,8 @@ const ELECTRICITY_TYPE_MAP = new Map([
   ["weis nicht", "PARTLY_GREEN"],
 ]);
 
-const SHORT_HAUL_TRAIN_FACTOR_MAP = new Map([
-  ["ja", 0.75],
-  ["manchmal", 0.9],
-  ["nein", 1],
-]);
-
 const HEATING_ENERGY_LABELS = [
+  "Energieverbrauch durchschnitt österreich/person heizen",
   "Energiebedarf Heizen",
   "Energieverbrauch Heizen",
   "Energieverbauch durschnitt österreich/person heizen",
@@ -316,44 +320,44 @@ const ELECTRICITY_ENERGY_LABELS = [
 ];
 
 const CONSUMPTION_BASE_LABELS = [
-  "Ernährung",
-  "Konsumgüter",
-  "Alltagsmobilität (ohne Pendeln)",
+  "Ernährung Durchschnittswert",
+  "Konsumgüter Durchschnittswert",
+  "Alltagsmobilität (ohne Pendeln) Durchschnittswert",
 ];
 
 const CONSUMPTION_CLOTHING_MAP = new Map([
-  ["ja", "Nachhaltige Kleidung – immer"],
-  ["immer", "Nachhaltige Kleidung – immer"],
-  ["mittel", "Nachhaltige Kleidung – manchmal"],
-  ["manchmal", "Nachhaltige Kleidung – manchmal"],
-  ["nein", PENALTY_SUSTAINABLE_CLOTHING_NO],
-  ["no", PENALTY_SUSTAINABLE_CLOTHING_NO],
+  ["ja", "Nachhaltige Kleidung immer"],
+  ["immer", "Nachhaltige Kleidung immer"],
+  ["mittel", "Nachhaltige Kleidung manchmal"],
+  ["manchmal", "Nachhaltige Kleidung manchmal"],
+  ["nein", NO_ADJUSTMENT],
+  ["no", NO_ADJUSTMENT],
 ]);
 
 const CONSUMPTION_REGIONAL_MAP = new Map([
-  ["ja", "Regionaler Einkauf – oft"],
-  ["oft", "Regionaler Einkauf – oft"],
-  ["mittel", "Regionaler Einkauf – manchmal"],
-  ["manchmal", "Regionaler Einkauf – manchmal"],
-  ["nein", PENALTY_REGIONAL_PRODUCTS_NO],
-  ["no", PENALTY_REGIONAL_PRODUCTS_NO],
+  ["ja", "Regionaler Einkauf oft"],
+  ["oft", "Regionaler Einkauf oft"],
+  ["mittel", "Regionaler Einkauf manchmal"],
+  ["manchmal", "Regionaler Einkauf manchmal"],
+  ["nein", NO_ADJUSTMENT],
+  ["no", NO_ADJUSTMENT],
 ]);
 
 const CONSUMPTION_ONLINE_MAP = new Map([
-  ["ja", "Verzicht auf Onlinekauf – oft"],
-  ["oft", "Verzicht auf Onlinekauf – oft"],
-  ["mittel", "Verzicht auf Onlinekauf – manchmal"],
-  ["manchmal", "Verzicht auf Onlinekauf – manchmal"],
-  ["nein", PENALTY_AVOIDS_ONLINE_NO],
-  ["no", PENALTY_AVOIDS_ONLINE_NO],
+  ["ja", "Verzicht auf Onlinekauf oft"],
+  ["oft", "Verzicht auf Onlinekauf oft"],
+  ["mittel", "Verzicht auf Onlinekauf manchmal"],
+  ["manchmal", "Verzicht auf Onlinekauf manchmal"],
+  ["nein", NO_ADJUSTMENT],
+  ["no", NO_ADJUSTMENT],
 ]);
 
 const CONSUMPTION_SHOPPING_TRANSPORT_MAP = new Map([
-  ["ja", "Umweltfreundlicher Transport beim Einkauf – Ja"],
-  ["mittel", "Umweltfreundlicher Transport beim Einkauf – Manchmal"],
-  ["manchmal", "Umweltfreundlicher Transport beim Einkauf – Manchmal"],
-  ["nein", PENALTY_SHOPPING_TRANSPORT_NO],
-  ["no", PENALTY_SHOPPING_TRANSPORT_NO],
+  ["ja", "Umweltfreundlicher Transport beim Einkauf Ja"],
+  ["mittel", "Umweltfreundlicher Transport beim Einkauf Manchmal"],
+  ["manchmal", "Umweltfreundlicher Transport beim Einkauf Manchmal"],
+  ["nein", NO_ADJUSTMENT],
+  ["no", NO_ADJUSTMENT],
 ]);
 
 const CONSUMPTION_APPLIANCES_MAP = new Map([
@@ -483,14 +487,6 @@ function mapWarmWaterTypes(text) {
   return mapped;
 }
 
-function parseShortHaulTrainFactor(text) {
-  const norm = normalizeEnum(text);
-  for (const [k, v] of SHORT_HAUL_TRAIN_FACTOR_MAP.entries()) {
-    if (norm.includes(k)) return v;
-  }
-  return 1;
-}
-
 function parseFlightDistanceKm(text) {
   const flightDistanceLabel = pickByIncludes(text, FLIGHT_DISTANCE_MAP);
   if (flightDistanceLabel?.includes("<1500")) return 750;
@@ -547,9 +543,6 @@ function applianceAdjustmentTons(factors, appliancesLabel) {
 
 function optionalConsumptionAdjustmentTons(factors, label, context) {
   if (!label || label === NO_ADJUSTMENT) return 0;
-  if (Object.prototype.hasOwnProperty.call(PENALTY_TONS, label)) {
-    return PENALTY_TONS[label];
-  }
   return factorValueByLabel(factors, label, "consumption", context, "annual_tonnes");
 }
 
@@ -642,12 +635,6 @@ function computeSurveyTotal(input, factors) {
     );
     flightKg = (factorValue * flightsPerYear) / 1000;
 
-    const isShortOrMediumFlight =
-      flightLabel.includes("Kurzstrecke") ||
-      flightLabel.includes("Mittelstrecke");
-    if (isShortOrMediumFlight) {
-      flightKg *= parseShortHaulTrainFactor(input.shortHaulTrainAlternativeText);
-    }
   }
 
   let warmWaterKg = 0;
@@ -748,12 +735,6 @@ function computeSurveyTotal(input, factors) {
     electricityKg = (energyValue * factorValue) / 1000;
   }
 
-  const smartElectricityUsageFreq = parseAltFreq(input.smartElectricityUsageText) ?? 0;
-  if (electricityKg > 0 && smartElectricityUsageFreq > 0) {
-    const reduction = Math.min(Math.max(smartElectricityUsageFreq, 0), 1) * SMART_ELECTRICITY_MAX_REDUCTION;
-    electricityKg *= 1 - reduction;
-  }
-
   const consumptionKg = computeConsumptionKg(
     {
       sustainableClothingText: input.sustainableClothingText,
@@ -806,8 +787,9 @@ function computeCommuteKgFromValues(input, factors) {
 }
 
 function computeCommuteKgFromSurveyRecord(survey, factors) {
-  const mainTransport = survey.transportMain || mapTransport(survey.transportMain);
-  const altTransport = survey.alternativeTransport || mapTransport(survey.alternativeTransport);
+  // Resolve mainTransport using carType if it's a car
+  const mainTransport = resolveMainTransportLabel(survey.transportMain, survey.carType);
+  const altTransport = mapTransport(survey.alternativeTransport) || survey.alternativeTransport;
   const altFreq = parseAltFreq(survey.alternativeTransportFreq) ?? Number(survey.alternativeTransportFreq ?? 0);
 
   return computeCommuteKgFromValues(
@@ -823,6 +805,7 @@ function computeCommuteKgFromSurveyRecord(survey, factors) {
 }
 
 function computeSurveyComponentKgFromRecord(survey, factors) {
+
   const commuteKg = computeCommuteKgFromSurveyRecord(survey, factors);
 
   let flightKg = 0;
@@ -840,10 +823,6 @@ function computeSurveyComponentKgFromRecord(survey, factors) {
       );
       flightKg = (factorValue * Number(parsedFlightsPerYear)) / 1000;
 
-      const isShortDistance = Number(parsedDistance) > 0 && Number(parsedDistance) < 1500;
-      if (isShortDistance) {
-        flightKg *= parseShortHaulTrainFactor(survey.shortHaulTrainAlternative);
-      }
     }
   }
 
@@ -949,12 +928,6 @@ function computeSurveyComponentKgFromRecord(survey, factors) {
     );
 
     electricityKg = (energyValue * factorValue) / 1000;
-
-    const smartUsage = parseAltFreq(survey.smartElectricityUsage) ?? Number(survey.smartElectricityUsage);
-    if (Number.isFinite(smartUsage) && smartUsage > 0) {
-      const reduction = Math.min(Math.max(smartUsage, 0), 1) * SMART_ELECTRICITY_MAX_REDUCTION;
-      electricityKg *= 1 - reduction;
-    }
   }
 
   const consumptionKg = computeConsumptionKg(

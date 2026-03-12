@@ -9,24 +9,10 @@ const {
 const {
   buildSurveyAggregations,
 } = require("../services/aggregation.service");
+const emissionFactors = require("../services/import/emission-factors.data");
 
 function baseFactors() {
-  return [
-    { category: "transport", label: "PKW Benzin", valueNumber: 200, unit: "g/km" },
-    { category: "transport", label: "Anderes Pendelfahrzeug", valueNumber: 150, unit: "g/km" },
-    { category: "flight", label: "Flugreisen Kurzstrecke (<1500 km)", valueNumber: 250000, unit: "g/pkm" },
-
-    { category: "heating", label: "Erdgas (Brennwert)", valueNumber: 100, unit: "g CO2/kWh" },
-    { category: "heating", label: "Strom Ö-Mix", valueNumber: 200, unit: "g CO2/kWh Strom" },
-    { category: "heating", label: "Ökostrom", valueNumber: 25, unit: "g CO2/kWh Strom" },
-    { category: "heating", label: "Energiebedarf Heizen", valueNumber: 1000, unit: "kWh/Jahr" },
-    { category: "heating", label: "Energiebedarf Warmwasser", valueNumber: 500, unit: "kWh/Jahr" },
-    { category: "heating", label: "Energiebedarf Strom", valueNumber: 1000, unit: "kWh/Jahr" },
-
-    { category: "consumption", label: "Ernährung", valueNumber: 1, unit: "t CO2e/Jahr" },
-    { category: "consumption", label: "Konsumgüter", valueNumber: 1, unit: "t CO2e/Jahr" },
-    { category: "consumption", label: "Alltagsmobilität (ohne Pendeln)", valueNumber: 1, unit: "t CO2e/Jahr" },
-  ];
+  return emissionFactors;
 }
 
 test("toNumber parses range values from Excel", () => {
@@ -173,7 +159,7 @@ test("computeSurveyTotal supports new schema naming without short-haul field", (
   assert.ok(total > 0);
 });
 
-test("computeSurveyComponentKgFromRecord applies short-haul train alternative factor", () => {
+test("computeSurveyComponentKgFromRecord ignores short-haul train alternative", () => {
   const factors = baseFactors();
 
   const noTrainAlternative = computeSurveyComponentKgFromRecord(
@@ -226,5 +212,5 @@ test("computeSurveyComponentKgFromRecord applies short-haul train alternative fa
     factors
   );
 
-  assert.ok(withTrainAlternative.flightKg < noTrainAlternative.flightKg);
+  assert.equal(withTrainAlternative.flightKg, noTrainAlternative.flightKg);
 });

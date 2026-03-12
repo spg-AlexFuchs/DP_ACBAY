@@ -112,6 +112,7 @@ async function getPublicAggregations(req, res) {
       prisma.survey.findMany({
         select: {
           transportMain: true,
+          carType: true,
           alternativeTransport: true,
           alternativeTransportFreq: true,
           officeDaysPerWeek: true,
@@ -163,6 +164,7 @@ async function getPrivateAggregations(req, res) {
         where,
         select: {
           transportMain: true,
+          carType: true,
           alternativeTransport: true,
           alternativeTransportFreq: true,
           officeDaysPerWeek: true,
@@ -208,6 +210,7 @@ async function getHrAggregations(req, res) {
     const surveys = await prisma.survey.findMany({
       select: {
         transportMain: true,
+        carType: true,
         totalCo2Kg: true,
         officeDaysPerWeek: true,
         distanceKm: true,

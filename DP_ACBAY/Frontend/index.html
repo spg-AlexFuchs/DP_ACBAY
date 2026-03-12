@@ -477,11 +477,21 @@
 
       function renderAggregatedCharts(agg) {
         const displayTransportLabel = (label) => {
+          if (label === "PKW Benzin") return "PKW Benzin";
+          if (label === "PKW Diesel") return "PKW Diesel";
+          if (label === "Hybrid HEV") return "Hybrid";
+          if (label === "PlugInHybrid PHEV") return "PHybrid";
           if (label === "Elektroauto BEV EU Strommix") return "Elektroauto";
-          if (label === "ÖPNV Bahn/Tram") return "Öffentliche Verkehrsmittel";
+          if (label === "Elektroauto BEV Ökostrom") return "Elektroauto (Öko)";
           if (label === "Gas CNG") return "Gas";
           if (label === "Flüssiggas LPG") return "Flüssiggas";
           if (label === "Wasserstoff FCEV") return "Wasserstoff";
+          if (label === "ÖPNV Bus Diesel") return "Bus (Diesel)";
+          if (label === "ÖPNV Bus Elektro") return "Bus (Elektro)";
+          if (label === "ÖPNV Bahn/Tram") return "Öffentliche Verkehrsmittel";
+          if (label === "Fahrrad") return "Fahrrad";
+          if (label === "E-Bike/E-Roller") return "E-Bike/Roller";
+          if (label === "Zu Fuß") return "Zu Fuß";
           if (label === "Anderes Pendelfahrzeug") return "Sonstiges";
           return label;
         };

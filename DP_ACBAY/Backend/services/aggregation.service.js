@@ -1,10 +1,13 @@
 const {
 	computeCommuteKgFromSurveyRecord,
 	computeSurveyComponentKgFromRecord,
+	resolveMainTransportLabel,
 	mapHeatingType,
 	mapHeatingTypes,
 	mapWarmWaterType,
 	mapWarmWaterTypes,
+	mapTransport,
+	parseAltFreq,
 } = require("./calculation.service");
 
 function bucketFlights(flightsPerYear) {
@@ -37,6 +40,101 @@ function flightDistanceBucket(flightDistanceKm) {
 const FLIGHT_BUCKET_ORDER = ["0", "1-2", "2-5", "5-10"];
 const FLIGHT_DISTANCE_ORDER = ["Kurzstrecke", "Mittelstrecke", "Langstrecke"];
 
+function getTransportFactorValue(factors, transportLabel) {
+	if (!transportLabel) return 0;
+	const labelNorm = String(transportLabel).toLowerCase();
+	const exact = (factors || []).find((factor) =>
+		String(factor?.category || "").toLowerCase() === "transport" &&
+		String(factor?.label || "").toLowerCase() === labelNorm
+	);
+	if (exact && Number.isFinite(Number(exact.valueNumber))) {
+		return Number(exact.valueNumber);
+	}
+
+	const transportValues = (factors || [])
+		.filter((factor) => String(factor?.category || "").toLowerCase() === "transport")
+		.map((factor) => Number(factor.valueNumber))
+		.filter((value) => Number.isFinite(value) && value > 0);
+
+	if (!transportValues.length) return 0;
+	return transportValues.reduce((sum, value) => sum + value, 0) / transportValues.length;
+}
+
+function categorizeTransport(transportLabel, carType = null) {
+	if (!transportLabel) return "UNKNOWN";
+	
+	const norm = String(transportLabel).toLowerCase();
+	
+	// Wenn "Auto" ohne Antriebsart, default auf "PKW Benzin"
+	if (norm === "auto") {
+		if (!carType) return "PKW Benzin";
+		const carNorm = String(carType).toLowerCase();
+		if (carNorm.includes("benzin")) return "PKW Benzin";
+		if (carNorm.includes("diesel")) return "PKW Diesel";
+		if (carNorm.includes("plug") && carNorm.includes("hybrid")) return "PlugInHybrid PHEV";
+		if (carNorm.includes("hybrid")) return "Hybrid HEV";
+		if (carNorm.includes("elektro")) return "Elektroauto BEV EU Strommix";
+		if (carNorm.includes("gas") && carNorm.includes("cng")) return "Gas CNG";
+		if (carNorm.includes("wasserstoff")) return "Wasserstoff FCEV";
+		if (carNorm.includes("fluessiggas") || carNorm.includes("flüssiggas")) return "Flüssiggas LPG";
+		return "PKW Benzin"; // Default fallback
+	}
+	
+	// Direkt die Antriebsarten/Labels aus emission-factors zurückgeben
+	// PKW Antriebsarten
+	if (norm.includes("benzin")) return "PKW Benzin";
+	if (norm.includes("diesel")) return "PKW Diesel";
+	if (norm.includes("plug") && norm.includes("hybrid")) return "PlugInHybrid PHEV";
+	if (norm.includes("hybrid")) return "Hybrid HEV";
+	if (norm.includes("elektro")) return "Elektroauto BEV EU Strommix";
+	if (norm.includes("gas") && norm.includes("cng")) return "Gas CNG";
+	if (norm.includes("wasserstoff")) return "Wasserstoff FCEV";
+	if (norm.includes("fluessiggas") || norm.includes("flüssiggas")) return "Flüssiggas LPG";
+	
+	// Zu Fuß
+	if (norm.includes("fuss") || norm.includes("gehen")) return "Zu Fuß";
+	
+	// Fahrrad
+	if (norm.includes("fahrrad") || norm.includes("bike")) return "Fahrrad";
+	
+	// E-Bike/E-Roller
+	if (norm.includes("e-bike") || norm.includes("e bike") || norm.includes("ebike") || 
+		norm.includes("roller") || norm.includes("e-roller") || norm.includes("e roller")) {
+		return "E-Bike/E-Roller";
+	}
+	
+	// ÖPNV Bus
+	if (norm.includes("bus")) return "ÖPNV Bus Diesel";
+	
+	// ÖPNV Bahn/Tram
+	if (norm.includes("bahn") || norm.includes("tram") || norm.includes("zug") || 
+		norm.includes("ubahn") || norm.includes("u-bahn") || norm.includes("straßenbahn") ||
+		norm.includes("strassenbahn") || norm.includes("offis") || norm.includes("oeffis") ||
+		norm.includes("öpnv") || norm.includes("oepnv") || norm.includes("oeffentliche") ||
+		norm.includes("öffentliche") || norm.includes("offentliche")) {
+		return "ÖPNV Bahn/Tram";
+	}
+	
+	return "Sonstiges";
+}
+
+function extractCarDriveType(transportLabel) {
+	if (!transportLabel) return null;
+	
+	const norm = String(transportLabel).toLowerCase();
+	
+	if (norm.includes("benzin")) return "Benzin";
+	if (norm.includes("diesel")) return "Diesel";
+	if (norm.includes("hybrid") && norm.includes("plug")) return "Plug-in Hybrid";
+	if (norm.includes("hybrid")) return "Hybrid";
+	if (norm.includes("elektro")) return "Elektro";
+	if (norm.includes("gas")) return "Gas/CNG";
+	if (norm.includes("wasserstoff")) return "Wasserstoff";
+	if (norm.includes("fluessiggas") || norm.includes("flüssiggas")) return "Flüssiggas";
+	
+	return null;
+}
+
 function buildSurveyAggregations(surveys, factors = []) {
 	const byTransport = {};
 	const co2ByTransport = {};
@@ -59,14 +157,45 @@ function buildSurveyAggregations(surveys, factors = []) {
 	let totalCo2 = 0;
 
 	surveys.forEach((survey) => {
-		const transport = survey.transportMain || "UNKNOWN";
-		byTransport[transport] = (byTransport[transport] || 0) + 1;
+		// Resolve actual transport label using carType if it's a car
+		const resolvedTransport = resolveMainTransportLabel(survey.transportMain, survey.carType);
+		const transportCategory = categorizeTransport(resolvedTransport, survey.carType);
+		const altTransportLabel = mapTransport(survey.alternativeTransport) || survey.alternativeTransport || null;
+		const altTransportCategory = categorizeTransport(altTransportLabel);
+		const altFreqParsed = parseAltFreq(survey.alternativeTransportFreq);
+		const altFreqRaw = Number.isFinite(altFreqParsed)
+			? altFreqParsed
+			: Number(survey.alternativeTransportFreq || 0);
+		const altFreq = Math.min(Math.max(Number.isFinite(altFreqRaw) ? altFreqRaw : 0, 0), 1);
+		byTransport[transportCategory] = (byTransport[transportCategory] || 0) + 1;
 
 		const commuteKg = computeCommuteKgFromSurveyRecord(survey, factors);
 
-		co2ByTransport[transport] = co2ByTransport[transport] || { sum: 0, count: 0 };
-		co2ByTransport[transport].sum += Number(commuteKg || 0);
-		co2ByTransport[transport].count += 1;
+		// CO2: alle beteiligten Verkehrsmittel (Haupt + Alternative anteilig)
+		const mainValue = getTransportFactorValue(factors, resolvedTransport);
+		const altValue = getTransportFactorValue(factors, altTransportLabel);
+		const mainWeight = mainValue * (1 - altFreq);
+		const altWeight = altTransportLabel ? altValue * altFreq : 0;
+		const totalWeight = mainWeight + altWeight;
+		const totalCommuteKg = Number(commuteKg || 0);
+
+		if (totalCommuteKg > 0 && totalWeight > 0) {
+			const mainKg = totalCommuteKg * (mainWeight / totalWeight);
+			co2ByTransport[transportCategory] = co2ByTransport[transportCategory] || { sum: 0, count: 0 };
+			co2ByTransport[transportCategory].sum += Number(mainKg || 0);
+			co2ByTransport[transportCategory].count += 1;
+
+			if (altWeight > 0) {
+				const altKg = totalCommuteKg * (altWeight / totalWeight);
+				co2ByTransport[altTransportCategory] = co2ByTransport[altTransportCategory] || { sum: 0, count: 0 };
+				co2ByTransport[altTransportCategory].sum += Number(altKg || 0);
+				co2ByTransport[altTransportCategory].count += 1;
+			}
+		} else {
+			co2ByTransport[transportCategory] = co2ByTransport[transportCategory] || { sum: 0, count: 0 };
+			co2ByTransport[transportCategory].sum += totalCommuteKg;
+			co2ByTransport[transportCategory].count += 1;
+		}
 
 		const flightCountBucket = bucketFlights(survey.flightsPerYear);
 		flights[flightCountBucket] = (flights[flightCountBucket] || 0) + 1;
