@@ -44,6 +44,11 @@ function normalizeText(value) {
     .trim();
 }
 
+function normalizeEmailKey(value) {
+  const text = toText(value);
+  return text ? text.toLowerCase() : null;
+}
+
 function buildHeaderIndex(rows) {
   const headerIndex = new Map();
   if (!rows.length) return headerIndex;
@@ -131,7 +136,12 @@ async function importSurvey(factors, userId) {
     where: { id: userId },
     select: { email: true },
   });
-  await prisma.survey.deleteMany();
+  const users = await prisma.user.findMany({ select: { id: true, email: true } });
+  const userIdByEmail = new Map(
+    users
+      .map((user) => [normalizeEmailKey(user.email), user.id])
+      .filter(([email]) => !!email)
+  );
 
   for (const row of rows) {
     const emailText = toText(getCell(row, headerIndex, ["Email", "E-Mail"]));
@@ -298,36 +308,70 @@ async function importSurvey(factors, userId) {
       factors
     );
 
-    await prisma.survey.create({
-      data: {
-        userId,
-        mitarbeiter: emailText || importUser?.email || null,
-        employeeName: nameText || null,
-        officeDaysPerWeek: calc.parseOfficeDays(officeDaysText),
-        transportMain: transportMainText || "UNKNOWN",
-        alternativeTransportFreq: alternativeTransportFreqText || null,
-        alternativeTransport: alternativeTransportText || null,
-        distanceKm: calc.parseDistanceKm(distanceText),
-        carType: carTypeText || null,
-        flightsPerYear: flightsPerYearText || null,
-        flightDistanceKm: flightDistanceText || null,
-        shortHaulTrainAlternative: shortHaulTrainAlternativeText || null,
-        heatingType: heatingTypeText || "UNKNOWN",
-        warmWaterType: warmWaterTypeText || "UNKNOWN",
-        usesGreenElectricity: usesGreenElectricityText || null,
-        greenElectricityType: greenElectricityTypeText || null,
-        smartElectricityUsage: smartElectricityUsageText || null,
-        loadOptimization: loadOptimizationText || null,
-        fireworkPerYear: fireworkText || null,
-        shoppingTransportEcoChoice: shoppingTransportEcoChoiceText || null,
-        usesEnergyEfficientAppliances: usesEnergyEfficientAppliancesText || null,
-        usesSmartDevices: usesSmartDevicesText || null,
-        buysRegionalProducts: buysRegionalProductsText || null,
-        buysSustainableClothing: buysSustainableClothingText || null,
-        avoidsOnlineShopping: avoidsOnlineShoppingText || null,
-        totalCo2Kg: Number.isFinite(totalCo2Kg) ? totalCo2Kg : null,
-      },
-    });
+    const emailKey = normalizeEmailKey(emailText);
+    const matchedUserId = emailKey ? userIdByEmail.get(emailKey) : null;
+    const targetUserId = matchedUserId || userId;
+
+    const surveyData = {
+      mitarbeiter: emailText || importUser?.email || null,
+      employeeName: nameText || null,
+      officeDaysPerWeek: calc.parseOfficeDays(officeDaysText),
+      transportMain: transportMainText || "UNKNOWN",
+      alternativeTransportFreq: alternativeTransportFreqText || null,
+      alternativeTransport: alternativeTransportText || null,
+      distanceKm: calc.parseDistanceKm(distanceText),
+      carType: carTypeText || null,
+      flightsPerYear: flightsPerYearText || null,
+      flightDistanceKm: flightDistanceText || null,
+      shortHaulTrainAlternative: shortHaulTrainAlternativeText || null,
+      heatingType: heatingTypeText || "UNKNOWN",
+      warmWaterType: warmWaterTypeText || "UNKNOWN",
+      usesGreenElectricity: usesGreenElectricityText || null,
+      greenElectricityType: greenElectricityTypeText || null,
+      smartElectricityUsage: smartElectricityUsageText || null,
+      loadOptimization: loadOptimizationText || null,
+      fireworkPerYear: fireworkText || null,
+      shoppingTransportEcoChoice: shoppingTransportEcoChoiceText || null,
+      usesEnergyEfficientAppliances: usesEnergyEfficientAppliancesText || null,
+      usesSmartDevices: usesSmartDevicesText || null,
+      buysRegionalProducts: buysRegionalProductsText || null,
+      buysSustainableClothing: buysSustainableClothingText || null,
+      avoidsOnlineShopping: avoidsOnlineShoppingText || null,
+      totalCo2Kg: Number.isFinite(totalCo2Kg) ? totalCo2Kg : null,
+    };
+
+    let existingSurvey = null;
+    if (matchedUserId) {
+      existingSurvey = await prisma.survey.findFirst({ where: { userId: matchedUserId } });
+    } else if (emailText) {
+      existingSurvey = await prisma.survey.findFirst({
+        where: {
+          userId,
+          mitarbeiter: emailText,
+        },
+      });
+    } else if (nameText) {
+      existingSurvey = await prisma.survey.findFirst({
+        where: {
+          userId,
+          employeeName: nameText,
+        },
+      });
+    }
+
+    if (existingSurvey) {
+      await prisma.survey.update({
+        where: { id: existingSurvey.id },
+        data: surveyData,
+      });
+    } else {
+      await prisma.survey.create({
+        data: {
+          userId: targetUserId,
+          ...surveyData,
+        },
+      });
+    }
   }
 
   console.log(`Umfrageantworten importiert: ${rows.length}`);

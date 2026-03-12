@@ -320,9 +320,9 @@ const ELECTRICITY_ENERGY_LABELS = [
 ];
 
 const CONSUMPTION_BASE_LABELS = [
-  "Ernährung Durchschnittswert",
-  "Konsumgüter Durchschnittswert",
-  "Alltagsmobilität (ohne Pendeln) Durchschnittswert",
+  ["Ernährung Durchschnittswert"],
+  ["Konsumgüter Durchschnittswert", "Konsumgüter Durschnittswert"],
+  ["Alltagsmobilität (ohne Pendeln) Durchschnittswert"],
 ];
 
 const CONSUMPTION_CLOTHING_MAP = new Map([
@@ -409,6 +409,11 @@ function parseFlightsPerYear(text, options = {}) {
   const { forStorage = false } = options;
   const norm = normalizeEnum(text).replace(/\s/g, "");
   if (norm.includes("nie")) return 0;
+  // Exact match first to avoid "0" substring-matching inside "5-10" etc.
+  if (FLIGHT_COUNT_MAP.has(norm)) {
+    const v = FLIGHT_COUNT_MAP.get(norm);
+    return forStorage ? Math.round(v) : v;
+  }
   for (const [k, v] of FLIGHT_COUNT_MAP.entries()) {
     if (norm.includes(k)) return forStorage ? Math.round(v) : v;
   }
@@ -547,11 +552,23 @@ function optionalConsumptionAdjustmentTons(factors, label, context) {
 }
 
 function computeConsumptionKg(input, factors) {
-  const baseTons = CONSUMPTION_BASE_LABELS.reduce(
-    (sum, label) =>
-      sum + factorValueByLabel(factors, label, "consumption", `consumption.base.${label}`, "annual_tonnes"),
-    0
-  );
+  const baseTons = CONSUMPTION_BASE_LABELS.reduce((sum, aliases) => {
+    const factor = findFirstFactor(factors, aliases);
+    const contextLabel = aliases[0] || "unknown";
+    if (factor) {
+      const unitGroup = getUnitGroup(factor.unit);
+      if (unitGroupMatches(unitGroup, "annual_tonnes") && Number.isFinite(factor.valueNumber)) {
+        return sum + Number(factor.valueNumber);
+      }
+    }
+    return sum + factorValueByLabel(
+      factors,
+      aliases[0],
+      "consumption",
+      `consumption.base.${contextLabel}`,
+      "annual_tonnes"
+    );
+  }, 0);
 
   const clothingLabel = pickByIncludesOrWarn(
     input.sustainableClothingText,
@@ -601,9 +618,11 @@ function computeSurveyTotal(input, factors) {
   const officeDays = parseOfficeDays(input.officeDaysText);
   const distanceKm = parseDistanceKm(input.distanceText);
   const mainTransport = resolveMainTransportLabel(input.transportMainText, input.carTypeText);
-  const altTransport =
+  const altTransportRaw =
     pickByIncludesOrWarn(input.alternativeTransportText, TRANSPORT_MAP, "alternativeTransport") ||
     (input.alternativeTransportText ? "Anderes Pendelfahrzeug" : null);
+  // "Auto" is a generic placeholder with no specific emission factor; use mainTransport instead
+  const altTransport = altTransportRaw === "Auto" ? mainTransport : altTransportRaw;
   const altFreq = parseAltFreq(input.alternativeTransportFreqText) ?? 0;
 
   const commuteKg = computeCommuteKgFromValues(
@@ -789,7 +808,9 @@ function computeCommuteKgFromValues(input, factors) {
 function computeCommuteKgFromSurveyRecord(survey, factors) {
   // Resolve mainTransport using carType if it's a car
   const mainTransport = resolveMainTransportLabel(survey.transportMain, survey.carType);
-  const altTransport = mapTransport(survey.alternativeTransport) || survey.alternativeTransport;
+  const altTransportRaw = mapTransport(survey.alternativeTransport) || survey.alternativeTransport;
+  // "Auto" is a generic placeholder with no specific emission factor; use mainTransport instead
+  const altTransport = altTransportRaw === "Auto" ? mainTransport : altTransportRaw;
   const altFreq = parseAltFreq(survey.alternativeTransportFreq) ?? Number(survey.alternativeTransportFreq ?? 0);
 
   return computeCommuteKgFromValues(

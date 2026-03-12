@@ -3,6 +3,7 @@ const {
   getPublicSurveys,
   getUserSurveys,
   getMySurveys,
+  getMySurveyBreakdown,
   saveMySurvey,
   getEmissionFactors,
   getPublicAggregations,
@@ -22,8 +23,9 @@ router.get("/aggregations/private", auth, getPrivateAggregations);
 
 // Authenticated endpoints
 router.get("/", auth, getUserSurveys);
-router.get("/me", auth, requireRole(ROLE.EMPLOYEE), getMySurveys);
-router.post("/me", auth, requireRole(ROLE.EMPLOYEE), saveMySurvey);
+router.get("/me", auth, getMySurveys);
+router.get("/me/breakdown", auth, getMySurveyBreakdown);
+router.post("/me", auth, saveMySurvey);
 
 // HR/Admin aggregations
 router.get(

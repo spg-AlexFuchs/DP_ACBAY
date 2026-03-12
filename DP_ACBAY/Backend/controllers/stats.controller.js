@@ -5,6 +5,15 @@ const calc = require("../services/calculation.service");
 
 const prisma = new PrismaClient();
 
+function normalizeComponentValues(components = {}) {
+  return Object.fromEntries(
+    Object.entries(components).map(([key, value]) => [
+      key,
+      Number.isFinite(Number(value)) ? Number(Number(value).toFixed(2)) : 0,
+    ])
+  );
+}
+
 /**
  * Get public surveys summary
  */
@@ -81,10 +90,89 @@ async function getMySurveys(req, res) {
       where: { userId: req.authUser.id },
       orderBy: { createdAt: "desc" },
     });
-    return res.json(surveys);
+
+    if (!surveys.length) {
+      return res.json([]);
+    }
+
+    const factorRows = await prisma.emissionFactor.findMany();
+    const factors = factorRows.map((row) => ({
+      label: row.type,
+      valueNumber: row.co2PerUnit,
+      category: row.category,
+      unit: row.unit,
+    }));
+
+    const enrichedSurveys = surveys.map((survey) => {
+      const components = normalizeComponentValues(
+        calc.computeSurveyComponentKgFromRecord(survey, factors)
+      );
+      const componentSum = Object.values(components).reduce(
+        (sum, value) => sum + Number(value || 0),
+        0
+      );
+      const totalCo2Kg = Number.isFinite(Number(survey.totalCo2Kg))
+        ? Number(Number(survey.totalCo2Kg).toFixed(2))
+        : Number(componentSum.toFixed(2));
+
+      return {
+        ...survey,
+        totalCo2Kg,
+        components,
+      };
+    });
+
+    return res.json(enrichedSurveys);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Failed to fetch surveys" });
+  }
+}
+
+async function getMySurveyBreakdown(req, res) {
+  try {
+    const latestSurvey = await prisma.survey.findFirst({
+      where: { userId: req.authUser.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!latestSurvey) {
+      return res.json({
+        hasData: false,
+        totalCo2Kg: 0,
+        components: {},
+      });
+    }
+
+    const factorRows = await prisma.emissionFactor.findMany();
+    const factors = factorRows.map((row) => ({
+      label: row.type,
+      valueNumber: row.co2PerUnit,
+      category: row.category,
+      unit: row.unit,
+    }));
+
+    const components = calc.computeSurveyComponentKgFromRecord(latestSurvey, factors);
+    const normalizedComponents = normalizeComponentValues(components || {});
+
+    const fallbackTotal = Object.values(normalizedComponents).reduce(
+      (sum, value) => sum + Number(value || 0),
+      0
+    );
+    const totalCo2Kg = Number.isFinite(Number(latestSurvey.totalCo2Kg))
+      ? Number(Number(latestSurvey.totalCo2Kg).toFixed(2))
+      : Number(fallbackTotal.toFixed(2));
+
+    return res.json({
+      hasData: true,
+      totalCo2Kg,
+      components: normalizedComponents,
+      surveyId: latestSurvey.id,
+      createdAt: latestSurvey.createdAt,
+    });
+  } catch (err) {
+    console.error("getMySurveyBreakdown error:", err);
+    return res.status(500).json({ error: "Failed to fetch survey breakdown" });
   }
 }
 
@@ -356,7 +444,16 @@ async function saveMySurvey(req, res) {
       survey = await prisma.survey.create({ data: { userId, ...data } });
     }
 
-    return res.json({ ok: true, updated: !!existing, totalCo2Kg: survey.totalCo2Kg });
+    const normalizedComponents = normalizeComponentValues(
+      calc.computeSurveyComponentKgFromRecord(survey, factors)
+    );
+
+    return res.json({
+      ok: true,
+      updated: !!existing,
+      totalCo2Kg: survey.totalCo2Kg,
+      components: normalizedComponents,
+    });
   } catch (err) {
     console.error("saveMySurvey error:", err);
     return res.status(500).json({ error: "Speichern fehlgeschlagen" });
@@ -367,6 +464,7 @@ module.exports = {
   getPublicSurveys,
   getUserSurveys,
   getMySurveys,
+  getMySurveyBreakdown,
   saveMySurvey,
   getEmissionFactors,
   getPublicAggregations,
