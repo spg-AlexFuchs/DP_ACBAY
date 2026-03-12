@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EVN AG | Mein Bereich</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="evn-colors.css" />
   </head>
@@ -36,7 +37,7 @@
               <h3 class="text-base font-semibold text-slate-900">Mobilität</h3>
               <div class="mt-3 grid gap-4 md:grid-cols-2">
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Bürotage pro Woche</span>
+                  <span class="mb-1 block font-medium text-slate-700">Wie viele Tage pro Woche sind Sie im Büro?</span>
                   <select name="officeDaysPerWeek" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="0">0 Tage</option>
                     <option value="1">1 Tag</option>
@@ -47,7 +48,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Pendelstrecke</span>
+                  <span class="mb-1 block font-medium text-slate-700">Wie weit ist Ihr Arbeitsplatz von zuhause entfernt?</span>
                   <select name="distanceKm" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="">– bitte wählen –</option>
                     <option value="unter10">Unter 10 km</option>
@@ -59,7 +60,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Pendelverkehrsmittel</span>
+                  <span class="mb-1 block font-medium text-slate-700">Mit welchem Verkehrsmittel kommen Sie in der Regel zur Arbeit?</span>
                   <select name="transportMain" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="">– bitte wählen –</option>
                     <option value="Eigenes Auto">Eigenes Auto</option>
@@ -85,7 +86,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Häufigkeit alternatives Verkehrsmittel</span>
+                  <span class="mb-1 block font-medium text-slate-700">Wie oft nutzen Sie ein alternatives Verkehrsmittel?</span>
                   <select name="alternativeTransportFreq" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Nie">Nie</option>
                     <option value="Selten">Selten</option>
@@ -94,7 +95,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Alternatives Verkehrsmittel</span>
+                  <span class="mb-1 block font-medium text-slate-700">Welches alternative Verkehrsmittel nutzen Sie?</span>
                   <select name="alternativeTransport" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="">Keines</option>
                     <option value="Fahrrad">Fahrrad</option>
@@ -128,14 +129,6 @@
                     <option value="Langstrecke">Langstrecke (mehr als 3.500 km)</option>
                   </select>
                 </label>
-                <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Würden Sie bei Kurzstrecken Alternativen wie Zug nutzen?</span>
-                  <select name="shortHaulTrainAlternative" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <option value="Ja">Ja</option>
-                    <option value="Manchmal">Manchmal</option>
-                    <option value="Nein">Nein</option>
-                  </select>
-                </label>
               </div>
             </div>
 
@@ -167,30 +160,12 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Ökostromnutzung</span>
+                  <span class="mb-1 block font-medium text-slate-700">Nutzen Sie zu Hause Ökostrom?</span>
                   <select name="usesGreenElectricity" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja">Ja</option>
                     <option value="Teilweise">Teilweise</option>
                     <option value="Nein">Nein</option>
                     <option value="Weiß nicht">Weiß nicht</option>
-                  </select>
-                </label>
-                <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Ökostrom Art</span>
-                  <select name="greenElectricityType" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <option value="">– bitte wählen –</option>
-                    <option value="Tarif Ökostrom">Ökostrom-Tarif</option>
-                    <option value="PV Eigenverbrauch">PV-Eigenverbrauch</option>
-                    <option value="Energiegemeinschaft">Energiegemeinschaft</option>
-                    <option value="Unbekannt">Unbekannt</option>
-                  </select>
-                </label>
-                <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Lastoptimierung</span>
-                  <select name="loadOptimization" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <option value="Ja, oft">Ja, oft</option>
-                    <option value="Selten">Selten</option>
-                    <option value="Nein, nie">Nein, nie</option>
                   </select>
                 </label>
               </div>
@@ -200,7 +175,7 @@
               <h3 class="text-base font-semibold text-slate-900">Verhalten &amp; Konsum</h3>
               <div class="mt-3 grid gap-4 md:grid-cols-2">
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Feuerwerk Nutzung</span>
+                  <span class="mb-1 block font-medium text-slate-700">Wie oft verwenden Sie Feuerwerk?</span>
                   <select name="fireworkPerYear" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Nie">Nie</option>
                     <option value="1 mal im Jahr">Einmal im Jahr</option>
@@ -208,7 +183,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Nachhaltiger Transport</span>
+                  <span class="mb-1 block font-medium text-slate-700">Achten Sie beim Kauf auf umweltfreundlichen Transport?</span>
                   <select name="shoppingTransportEcoChoice" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja">Ja</option>
                     <option value="Manchmal">Manchmal</option>
@@ -216,7 +191,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Energieeffiziente Geräte</span>
+                  <span class="mb-1 block font-medium text-slate-700">Nutzen Sie energiesparende Haushaltsgeräte?</span>
                   <select name="usesEnergyEfficientAppliances" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja, alle">Ja, alle</option>
                     <option value="Einige">Einige</option>
@@ -232,7 +207,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Regionaler Kauf</span>
+                  <span class="mb-1 block font-medium text-slate-700">Kaufen Sie gerne regionale Produkte?</span>
                   <select name="buysRegionalProducts" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja, oft">Ja, oft</option>
                     <option value="Manchmal">Manchmal</option>
@@ -240,7 +215,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Nachhaltige Kleidung</span>
+                  <span class="mb-1 block font-medium text-slate-700">Achten Sie bei Kleidung auf nachhaltige Materialien?</span>
                   <select name="buysSustainableClothing" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja, immer">Ja, immer</option>
                     <option value="Manchmal">Manchmal</option>
@@ -248,7 +223,7 @@
                   </select>
                 </label>
                 <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Bewusster Konsum</span>
+                  <span class="mb-1 block font-medium text-slate-700">Kaufen Sie bewusst weniger online?</span>
                   <select name="avoidsOnlineShopping" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="Ja, oft">Ja, oft</option>
                     <option value="Manchmal">Manchmal</option>
@@ -271,6 +246,33 @@
             </div>
           </form>
         </section>
+
+        <section class="surface-card mt-6">
+          <h2 class="text-xl font-semibold">Mein CO2 Verbrauch</h2>
+          <p class="mt-1 text-sm text-slate-500">Übersicht basierend auf Ihren zuletzt gespeicherten Umfragewerten.</p>
+
+          <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div class="text-sm text-slate-600">Gesamtverbrauch</div>
+            <div id="myCo2Total" class="mt-1 text-3xl font-bold text-slate-900">–</div>
+          </div>
+
+          <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <div class="rounded-xl border border-slate-200 p-4">
+              <h3 class="text-sm font-semibold text-slate-800">Aufteilung nach Bereichen</h3>
+              <div class="mt-3" style="height: 280px;">
+                <canvas id="myCo2BreakdownChart" style="width: 100%; height: 100%; display: block;"></canvas>
+              </div>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-4">
+              <h3 class="text-sm font-semibold text-slate-800">Komponenten in kg/Jahr</h3>
+              <div class="mt-3" style="height: 280px;">
+                <canvas id="myCo2BarsChart" style="width: 100%; height: 100%; display: block;"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <p id="myCo2Hint" class="mt-3 min-h-[1.25rem] text-sm text-slate-500"></p>
+        </section>
       </main>
     </div>
 
@@ -292,6 +294,12 @@
       const messageEl = document.getElementById("surveyMessage");
       const editBtn = document.getElementById("editSurveyBtn");
       const saveBtn = document.getElementById("saveSurveyBtn");
+      const myCo2TotalEl = document.getElementById("myCo2Total");
+      const myCo2HintEl = document.getElementById("myCo2Hint");
+
+      let myCo2BreakdownChart = null;
+      let myCo2BarsChart = null;
+      let cachedMySurveyRows = [];
 
       function setMessage(text, isError = false) {
         messageEl.textContent = text;
@@ -365,22 +373,6 @@
         return "Langstrecke";
       }
 
-      function mapSmartUsageToOption(smartUsage) {
-        if (smartUsage === null || smartUsage === undefined) return "";
-        const text = String(smartUsage).trim();
-        if (text) {
-          const lower = text.toLowerCase();
-          if (lower.includes("ja")) return "Ja, oft";
-          if (lower.includes("selten") || lower.includes("manchmal")) return "Selten";
-          if (lower.includes("nein") || lower.includes("nie")) return "Nein, nie";
-        }
-        const n = Number(smartUsage);
-        if (!Number.isFinite(n)) return "";
-        if (n >= 0.3) return "Ja, oft";
-        if (n >= 0.05) return "Selten";
-        return "Nein, nie";
-      }
-
       function applySurveyToForm(survey) {
         if (!survey) return;
 
@@ -426,7 +418,6 @@
 
         setSelectByPreferred("flightsPerYear", [mapFlightsToOption(survey.flightsPerYear)]);
         setSelectByPreferred("flightDistance", [mapFlightDistanceToOption(survey.flightDistanceKm)]);
-        setSelectByPreferred("shortHaulTrainAlternative", [survey.shortHaulTrainAlternative]);
         setSelectByPreferred("heatingType", [
           survey.heatingType,
           survey.heatingType?.includes("Wärmepumpe") ? "Wärmepumpe" : null,
@@ -448,9 +439,6 @@
         ]);
 
         setSelectByPreferred("usesGreenElectricity", [survey.usesGreenElectricity]);
-        setSelectByPreferred("greenElectricityType", [survey.greenElectricityType]);
-        setSelectByPreferred("loadOptimization", [mapSmartUsageToOption(survey.loadOptimization || survey.smartElectricityUsage)]);
-
         setSelectByPreferred("fireworkPerYear", [
           survey.fireworkPerYear,
           Number(survey.fireworkPerYear) <= 0 ? "Nie" : null,
@@ -466,10 +454,158 @@
         setSelectByPreferred("avoidsOnlineShopping", [survey.avoidsOnlineShopping]);
       }
 
-      async function loadMySurvey() {
-        if (!token) {
-          setMessage("Bitte zuerst einloggen, um Umfragewerte speichern zu können.", true);
+      function formatKg(value) {
+        return `${Number(value || 0).toLocaleString("de-DE", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} kg/Jahr`;
+      }
+
+      function destroyMyCharts() {
+        if (myCo2BreakdownChart) {
+          myCo2BreakdownChart.destroy();
+          myCo2BreakdownChart = null;
+        }
+        if (myCo2BarsChart) {
+          myCo2BarsChart.destroy();
+          myCo2BarsChart = null;
+        }
+      }
+
+      function renderMyCharts(totalCo2Kg, components) {
+        const labels = ["Pendeln", "Flüge", "Heizung", "Warmwasser", "Strom", "Konsum"];
+        const values = [
+          Number(components.commuteKg || 0),
+          Number(components.flightKg || 0),
+          Number(components.heatingKg || 0),
+          Number(components.warmWaterKg || 0),
+          Number(components.electricityKg || 0),
+          Number(components.consumptionKg || 0),
+        ];
+
+        const hasPositiveValues = values.some((value) => Number.isFinite(value) && value > 0);
+        myCo2TotalEl.textContent = formatKg(totalCo2Kg);
+
+        if (!hasPositiveValues) {
+          destroyMyCharts();
+          myCo2HintEl.textContent = "Noch keine verwertbaren CO2-Komponenten vorhanden.";
           return;
+        }
+
+        myCo2HintEl.textContent = "Die Diagramme zeigen die Aufteilung Ihrer letzten gespeicherten Umfrage.";
+        destroyMyCharts();
+
+        const pieCtx = document.getElementById("myCo2BreakdownChart");
+        const barsCtx = document.getElementById("myCo2BarsChart");
+
+        myCo2BreakdownChart = new Chart(pieCtx, {
+          type: "doughnut",
+          data: {
+            labels,
+            datasets: [{
+              data: values,
+              backgroundColor: ["#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fca5a5", "#991b1b"],
+              borderWidth: 1,
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "bottom" },
+            },
+          },
+        });
+
+        myCo2BarsChart = new Chart(barsCtx, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [{
+              label: "kg/Jahr",
+              data: values,
+              backgroundColor: "#dc2626",
+              borderRadius: 6,
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true },
+            },
+            plugins: {
+              legend: { display: false },
+            },
+          },
+        });
+      }
+
+      function renderMyTotalOnly(totalCo2Kg, hintText) {
+        myCo2TotalEl.textContent = formatKg(totalCo2Kg);
+        myCo2HintEl.textContent = hintText;
+        destroyMyCharts();
+      }
+
+      async function loadMyBreakdown() {
+        if (!token) {
+          myCo2TotalEl.textContent = "Nicht eingeloggt";
+          myCo2HintEl.textContent = "Bitte einloggen, um Ihre persönlichen Diagramme zu sehen.";
+          destroyMyCharts();
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_URL}/surveys/me/breakdown`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            let fallbackTotal = Array.isArray(cachedMySurveyRows) && cachedMySurveyRows.length > 0
+              ? Number(cachedMySurveyRows[0]?.totalCo2Kg || 0)
+              : 0;
+            if (!(Number.isFinite(fallbackTotal) && fallbackTotal > 0)) {
+              const rows = await loadMySurvey({ silent: true });
+              fallbackTotal = Array.isArray(rows) && rows.length > 0
+                ? Number(rows[0]?.totalCo2Kg || 0)
+                : 0;
+            }
+            if (Number.isFinite(fallbackTotal) && fallbackTotal > 0) {
+              renderMyTotalOnly(
+                fallbackTotal,
+                "Aufteilung derzeit nicht verfügbar. Gesamtwert wird aus Ihrer gespeicherten Umfrage angezeigt."
+              );
+            } else {
+              myCo2TotalEl.textContent = "–";
+              myCo2HintEl.textContent = "Persönliche CO2-Daten konnten nicht geladen werden.";
+              destroyMyCharts();
+            }
+            return;
+          }
+
+          if (!data?.hasData) {
+            myCo2TotalEl.textContent = "–";
+            myCo2HintEl.textContent = "Noch keine gespeicherte Umfrage vorhanden.";
+            destroyMyCharts();
+            return;
+          }
+
+          renderMyCharts(Number(data.totalCo2Kg || 0), data.components || {});
+        } catch (_error) {
+          myCo2TotalEl.textContent = "–";
+          myCo2HintEl.textContent = "Server nicht erreichbar. Persönliche Diagramme konnten nicht geladen werden.";
+          destroyMyCharts();
+        }
+      }
+
+      async function loadMySurvey(options = {}) {
+        const { silent = false } = options;
+        if (!token) {
+          if (!silent) {
+            setMessage("Bitte zuerst einloggen, um Umfragewerte speichern zu können.", true);
+          }
+          return [];
         }
 
         try {
@@ -478,18 +614,41 @@
           });
           const rows = await response.json().catch(() => []);
           if (!response.ok) {
-            setMessage("Umfragewerte konnten nicht geladen werden.", true);
-            return;
+            if (!silent) {
+              setMessage("Umfragewerte konnten nicht geladen werden.", true);
+            }
+            return [];
           }
+
+          cachedMySurveyRows = Array.isArray(rows) ? rows : [];
 
           if (Array.isArray(rows) && rows.length > 0) {
             applySurveyToForm(rows[0]);
-            setMessage("Vorhandene Umfragewerte geladen. Mit 'Bearbeiten' können Sie Änderungen vornehmen.");
+            if (rows[0].components && typeof rows[0].components === "object") {
+              renderMyCharts(Number(rows[0].totalCo2Kg || 0), rows[0].components);
+            } else if (Number(rows[0]?.totalCo2Kg || 0) > 0) {
+              renderMyTotalOnly(
+                Number(rows[0].totalCo2Kg || 0),
+                "Aufteilung wird geladen. Gesamtwert stammt aus Ihrer letzten gespeicherten Umfrage."
+              );
+            }
+            if (!silent) {
+              setMessage("Vorhandene Umfragewerte geladen. Mit 'Bearbeiten' können Sie Änderungen vornehmen.");
+            }
           } else {
-            setMessage("Noch keine gespeicherten Umfragewerte. Mit 'Bearbeiten' können Sie neue Werte eingeben.");
+            myCo2TotalEl.textContent = "–";
+            myCo2HintEl.textContent = "Noch keine gespeicherte Umfrage vorhanden.";
+            destroyMyCharts();
+            if (!silent) {
+              setMessage("Noch keine gespeicherten Umfragewerte. Mit 'Bearbeiten' können Sie neue Werte eingeben.");
+            }
           }
+          return cachedMySurveyRows;
         } catch (_error) {
-          setMessage("Server nicht erreichbar. Bitte später erneut versuchen.", true);
+          if (!silent) {
+            setMessage("Server nicht erreichbar. Bitte später erneut versuchen.", true);
+          }
+          return [];
         }
       }
 
@@ -535,13 +694,21 @@
             : "";
           setMessage(`Umfrage erfolgreich ${mode}.${co2}`);
           setFormLocked(true);
+          if (data.components && typeof data.components === "object") {
+            renderMyCharts(Number(data.totalCo2Kg || 0), data.components);
+          }
+          await loadMySurvey({ silent: true });
         } catch (_error) {
           setMessage("Server nicht erreichbar. Bitte später erneut versuchen.", true);
         }
       });
 
-      setFormLocked(true);
-      loadMySurvey();
+      async function initMyBereich() {
+        setFormLocked(true);
+        await loadMySurvey();
+      }
+
+      initMyBereich();
     </script>
   </body>
 </html>
