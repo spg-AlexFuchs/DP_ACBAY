@@ -298,21 +298,6 @@ const ELECTRICITY_TYPE_MAP = new Map([
   ["weis nicht", "PARTLY_GREEN"],
 ]);
 
-const HEATING_SAVING_REDUCTION_MAP = new Map([
-  ["regelmassig", 0.1],
-  ["regelmäßig", 0.1],
-  ["ja", 0.1],
-  ["manchmal", 0.05],
-  ["nie", 0],
-]);
-
-const FLIGHT_AVOIDANCE_FACTOR_MAP = new Map([
-  ["ja fast immer", 0.6],
-  ["fast immer", 0.6],
-  ["manchmal", 0.85],
-  ["nein", 1],
-]);
-
 const SHORT_HAUL_TRAIN_FACTOR_MAP = new Map([
   ["ja", 0.75],
   ["manchmal", 0.9],
@@ -498,22 +483,6 @@ function mapWarmWaterTypes(text) {
   return mapped;
 }
 
-function parseHeatingSavingReduction(text) {
-  const norm = normalizeEnum(text);
-  for (const [k, v] of HEATING_SAVING_REDUCTION_MAP.entries()) {
-    if (norm.includes(k)) return v;
-  }
-  return 0;
-}
-
-function parseFlightAvoidanceFactor(text) {
-  const norm = normalizeEnum(text);
-  for (const [k, v] of FLIGHT_AVOIDANCE_FACTOR_MAP.entries()) {
-    if (norm.includes(k)) return v;
-  }
-  return 1;
-}
-
 function parseShortHaulTrainFactor(text) {
   const norm = normalizeEnum(text);
   for (const [k, v] of SHORT_HAUL_TRAIN_FACTOR_MAP.entries()) {
@@ -527,6 +496,20 @@ function parseFlightDistanceKm(text) {
   if (flightDistanceLabel?.includes("<1500")) return 750;
   if (flightDistanceLabel?.includes("1500–3500")) return 2500;
   if (flightDistanceLabel?.includes(">3500")) return 5000;
+
+  const numericDistance = toNumber(text);
+  if (Number.isFinite(numericDistance) && numericDistance > 0) return numericDistance;
+
+  const norm = normalizeEnum(text).replace(/\s/g, "");
+  const rangeMatch = norm.match(/(\d+(?:[.,]\d+)?)\s*[-–]\s*(\d+(?:[.,]\d+)?)/);
+  if (rangeMatch) {
+    const from = Number(rangeMatch[1].replace(",", "."));
+    const to = Number(rangeMatch[2].replace(",", "."));
+    if (Number.isFinite(from) && Number.isFinite(to) && from > 0 && to > 0) {
+      return (from + to) / 2;
+    }
+  }
+
   return null;
 }
 
@@ -643,7 +626,12 @@ function computeSurveyTotal(input, factors) {
 
   let flightKg = 0;
   const flightsPerYear = parseFlightsPerYear(input.flightsPerYearText);
-  const flightLabel = pickByIncludesOrWarn(input.flightDistanceText, FLIGHT_DISTANCE_MAP, "flightDistance");
+  const directFlightLabel = pickByIncludes(input.flightDistanceText, FLIGHT_DISTANCE_MAP);
+  const parsedFlightDistanceKm = parseFlightDistanceKm(input.flightDistanceText);
+  const flightLabel = directFlightLabel || labelFromFlightDistanceKm(parsedFlightDistanceKm);
+  if (!flightLabel && input.flightDistanceText !== null && input.flightDistanceText !== undefined && String(input.flightDistanceText).trim() !== "") {
+    console.warn(`[CO2] Unmapped answer for flightDistance: "${input.flightDistanceText}"`);
+  }
   if (flightsPerYear !== null && flightLabel) {
     const factorValue = factorValueByLabelWithFallback(
       factors,
@@ -653,9 +641,6 @@ function computeSurveyTotal(input, factors) {
       ["emission_g_per_distance", "emission_g_per_flight"]
     );
     flightKg = (factorValue * flightsPerYear) / 1000;
-
-    const flightAvoidanceFactor = parseFlightAvoidanceFactor(input.flightAvoidanceText);
-    flightKg *= flightAvoidanceFactor;
 
     const isShortOrMediumFlight =
       flightLabel.includes("Kurzstrecke") ||
@@ -721,10 +706,6 @@ function computeSurveyTotal(input, factors) {
       return sum + (energySharePerType * factorValue) / 1000;
     }, 0);
 
-    const heatingSavingsReduction = parseHeatingSavingReduction(input.heatingSavingsText);
-    if (heatingSavingsReduction > 0) {
-      heatingKg *= 1 - heatingSavingsReduction;
-    }
   }
 
   let electricityKg = 0;
@@ -858,9 +839,6 @@ function computeSurveyComponentKgFromRecord(survey, factors) {
         ["emission_g_per_distance", "emission_g_per_flight"]
       );
       flightKg = (factorValue * Number(parsedFlightsPerYear)) / 1000;
-
-      const flightAvoidanceFactor = parseFlightAvoidanceFactor(survey.flightAvoidance);
-      flightKg *= flightAvoidanceFactor;
 
       const isShortDistance = Number(parsedDistance) > 0 && Number(parsedDistance) < 1500;
       if (isShortDistance) {

@@ -43,20 +43,17 @@ model Survey {
   alternativeTransportFreq String?
   alternativeTransport     String? // z.B. "BIKE"
   distanceKm               Float
-  commuteTime              String?
 
   carType String? // "PETROL", "ELECTRIC", etc.
 
   // ===== Flug =====
   flightsPerYear   String?
   flightDistanceKm String?
-  flightAvoidance  String?
   shortHaulTrainAlternative String?
 
   // ===== Wohnen =====
   heatingType           String // "GAS", "HEAT_PUMP", etc.
   warmWaterType         String // "GAS", "ELECTRICITY"
-  heatingSavings        String?
   usesGreenElectricity  String? // "YES", "NO", "PARTLY"
   greenElectricityType  String?
   smartElectricityUsage String?

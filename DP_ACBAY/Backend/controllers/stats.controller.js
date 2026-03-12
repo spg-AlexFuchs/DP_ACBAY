@@ -263,13 +263,10 @@ async function saveMySurvey(req, res) {
     const alternativeTransportFreqText = pick("alternativeTransportFreq", "haeufigkeitAlternativesVerkehrsmittel");
     const alternativeTransportText    = pick("alternativeTransport", "alternativesVerkehrsmittel");
     const distanceText                = pick("distanceKm", "pendelstrecke");
-    const commuteTimeText             = pick("pendelzeit", "commuteTime");
     const flightsPerYearText          = pick("flightsPerYear", "fluegeProJahr");
     const flightDistanceText          = pick("flightDistance", "flightDistanceKm", "flugstrecken");
-    const flightAvoidanceText         = pick("flightAvoidance", "verzichtAufFlugreisen");
     const shortHaulTrainAlternativeText = pick("shortHaulTrainAlternative");
     const heatingTypeText             = pick("heatingType", "heizungsart");
-    const heatingSavingsText          = pick("heatingSaving", "heatingSavings", "heizungsregelung");
     const warmWaterTypeText           = pick("warmWaterType", "warmwassererzeugung");
     const usesGreenElectricityText    = pick("usesGreenElectricity", "oekostromnutzung");
     const greenElectricityTypeText    = pick("greenElectricityType", "oekostromArt");
@@ -303,10 +300,8 @@ async function saveMySurvey(req, res) {
         distanceText,
         flightsPerYearText,
         flightDistanceText,
-        flightAvoidanceText,
         shortHaulTrainAlternativeText,
         heatingTypeText,
-        heatingSavingsText,
         warmWaterTypeText,
         usesGreenElectricityText,
         smartElectricityUsageText,
@@ -329,15 +324,12 @@ async function saveMySurvey(req, res) {
       alternativeTransportFreq: alternativeTransportFreqText || null,
       alternativeTransport: alternativeTransportText || null,
       distanceKm: calc.parseDistanceKm(distanceText),
-      commuteTime: commuteTimeText || null,
       carType: carTypeText || null,
       flightsPerYear: flightsPerYearText || null,
       flightDistanceKm: flightDistanceText || null,
-      flightAvoidance: flightAvoidanceText || null,
       shortHaulTrainAlternative: shortHaulTrainAlternativeText || null,
       heatingType: heatingTypeText || "UNKNOWN",
       warmWaterType: warmWaterTypeText || "UNKNOWN",
-      heatingSavings: heatingSavingsText || null,
       usesGreenElectricity: usesGreenElectricityText || null,
       greenElectricityType: greenElectricityTypeText || null,
       smartElectricityUsage: smartElectricityUsageText || null,

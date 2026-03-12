@@ -104,30 +104,12 @@
                     <option value="Sonstiges">Sonstiges</option>
                   </select>
                 </label>
-                <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Pendelzeit</span>
-                  <select name="pendelzeit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <option value="">– bitte wählen –</option>
-                    <option value="unter 15 min">Unter 15 Minuten</option>
-                    <option value="15-30 min">15–30 Minuten</option>
-                    <option value="30-60 min">30–60 Minuten</option>
-                    <option value="über 60 min">Über 60 Minuten</option>
-                  </select>
-                </label>
               </div>
             </div>
 
             <div>
               <h3 class="text-base font-semibold text-slate-900">Flugreisen</h3>
               <div class="mt-3 grid gap-4 md:grid-cols-2">
-                <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Verzicht auf Flugreisen</span>
-                  <select name="flightAvoidance" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <option value="Ja, fast immer">Ja, fast immer</option>
-                    <option value="Manchmal">Manchmal</option>
-                    <option value="Nein">Nein</option>
-                  </select>
-                </label>
                 <label class="text-sm">
                   <span class="mb-1 block font-medium text-slate-700">Wie oft fliegen Sie im Jahr?</span>
                   <select name="flightsPerYear" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
@@ -171,14 +153,6 @@
                     <option value="Holzofen">Holzofen</option>
                     <option value="Fernwärme">Fernwärme</option>
                     <option value="Sonstiges">Sonstiges</option>
-                  </select>
-                </label>
-                <label class="text-sm">
-                  <span class="mb-1 block font-medium text-slate-700">Heizungsregelung</span>
-                  <select name="heatingSavings" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <option value="Ja, regelmäßig (z. B. Thermostat, Heizungsregelung)">Ja, regelmäßig (z. B. Thermostat, Heizungsregelung)</option>
-                    <option value="Manchmal">Manchmal</option>
-                    <option value="Nie">Nie</option>
                   </select>
                 </label>
                 <label class="text-sm">
@@ -412,7 +386,6 @@
 
         setSelectByPreferred("officeDaysPerWeek", [survey.officeDaysPerWeek]);
         setSelectByPreferred("distanceKm", [mapDistanceToOption(survey.distanceKm)]);
-        setSelectByPreferred("pendelzeit", [survey.commuteTime]);
 
         setSelectByPreferred("transportMain", [
           survey.transportMain,
@@ -453,7 +426,6 @@
 
         setSelectByPreferred("flightsPerYear", [mapFlightsToOption(survey.flightsPerYear)]);
         setSelectByPreferred("flightDistance", [mapFlightDistanceToOption(survey.flightDistanceKm)]);
-        setSelectByPreferred("flightAvoidance", [survey.flightAvoidance]);
         setSelectByPreferred("shortHaulTrainAlternative", [survey.shortHaulTrainAlternative]);
         setSelectByPreferred("heatingType", [
           survey.heatingType,
@@ -477,7 +449,6 @@
 
         setSelectByPreferred("usesGreenElectricity", [survey.usesGreenElectricity]);
         setSelectByPreferred("greenElectricityType", [survey.greenElectricityType]);
-        setSelectByPreferred("heatingSavings", [survey.heatingSavings]);
         setSelectByPreferred("loadOptimization", [mapSmartUsageToOption(survey.loadOptimization || survey.smartElectricityUsage)]);
 
         setSelectByPreferred("fireworkPerYear", [

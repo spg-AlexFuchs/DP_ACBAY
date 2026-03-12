@@ -2,11 +2,11 @@ const path = require("path");
 const xlsx = require("xlsx");
 const { PrismaClient } = require("@prisma/client");
 const calc = require("../calculation.service");
+const staticEmissionFactors = require("./emission-factors.data");
 
 const prisma = new PrismaClient();
 
 const DATA_DIR = path.resolve(__dirname, "..", "..", "data");
-const EMISSION_FILE = path.join(DATA_DIR, "emissionen_nach_typ.xlsx");
 const SURVEY_FILE = path.join(DATA_DIR, "auswertung_umfrage.xlsx");
 
 function toText(value) {
@@ -74,16 +74,6 @@ function mapCombinedFlightAnswerToShortHaul(value) {
   return null;
 }
 
-function findColumnName(headers, aliases = []) {
-  const normalizedHeaders = headers.map((h) => ({ raw: h, norm: normalizeText(h) }));
-  for (const alias of aliases) {
-    const aliasNorm = normalizeText(alias);
-    const hit = normalizedHeaders.find((h) => h.norm === aliasNorm);
-    if (hit) return hit.raw;
-  }
-  return null;
-}
-
 function getSheetRows(workbook, sheetName) {
   const sheet = workbook.Sheets[sheetName];
   if (!sheet) return [];
@@ -91,65 +81,14 @@ function getSheetRows(workbook, sheetName) {
 }
 
 async function importEmissionFactors() {
-  const workbook = xlsx.readFile(EMISSION_FILE);
-  const items = [];
-
-  const configs = [
-    {
-      sheetName: "Pendelweg",
-      category: "transport",
-      labelAliases: ["Mobilitätsart (2)", "Mobilitatsart (2)", "MobilitÃ¤tsart (2)"],
-      valueAliases: ["Lebenszyklus Emission"],
-      unitAliases: ["Einheit"],
-    },
-    {
-      sheetName: "Urlaub",
-      category: "flight",
-      labelAliases: ["Mobilitätsart (2)", "Mobilitatsart (2)", "MobilitÃ¤tsart (2)"],
-      valueAliases: ["Lebenszyklus Emission"],
-      unitAliases: ["Einheit"],
-    },
-    {
-      sheetName: "Wärmeerzeugung",
-      category: "heating",
-      labelAliases: ["Emissionsquelle / Parameter"],
-      valueAliases: ["CO2-Emissionen"],
-      unitAliases: ["Einheit"],
-    },
-    {
-      sheetName: "Konsum",
-      category: "consumption",
-      labelAliases: ["Kategorie"],
-      valueAliases: ["Basiswert_t_CO2e"],
-      fallbackValueAliases: ["Max_Reduktion_t_CO2e"],
-      unitAliases: ["Einheit"],
-    },
-  ];
-
-  for (const cfg of configs) {
-    const rows = getSheetRows(workbook, cfg.sheetName);
-    if (!rows.length) continue;
-
-    const headers = Object.keys(rows[0]);
-    const labelKey = findColumnName(headers, cfg.labelAliases);
-    const valueKey = findColumnName(headers, cfg.valueAliases);
-    const fallbackValueKey = findColumnName(headers, cfg.fallbackValueAliases || []);
-    const unitKey = findColumnName(headers, cfg.unitAliases);
-
-    rows.forEach((row) => {
-      const label = toText(labelKey ? row[labelKey] : null);
-      const valueText =
-        toText(valueKey ? row[valueKey] : null) || toText(fallbackValueKey ? row[fallbackValueKey] : null);
-      if (!label || !valueText) return;
-
-      items.push({
-        category: cfg.category,
-        label,
-        valueNumber: toNumber(valueText),
-        unit: toText(unitKey ? row[unitKey] : null) || "",
-      });
-    });
-  }
+  const items = staticEmissionFactors
+    .filter((item) => item && item.category && item.label)
+    .map((item) => ({
+      category: toText(item.category),
+      label: toText(item.label),
+      valueNumber: toNumber(item.valueNumber) ?? 0,
+      unit: toText(item.unit) || "",
+    }));
 
   if (!items.length) {
     console.log("Keine Emissionsdaten gefunden.");
@@ -227,9 +166,6 @@ async function importSurvey(factors, userId) {
     const distanceText = toText(
       getCell(row, headerIndex, ["Pendelstrecke", "Wie weit ist Ihr Arbeitsplatz von zuhause entfernt?"])
     );
-    const commuteTimeText = toText(
-      getCell(row, headerIndex, ["Pendelzeit"])
-    );
     const carTypeText = toText(
       getCell(row, headerIndex, ["Autoantrieb", "Falls Sie ein Auto benutzen: Welchen Antrieb hat Ihr Auto?"])
     );
@@ -237,7 +173,7 @@ async function importSurvey(factors, userId) {
       getCell(row, headerIndex, ["Flüge pro Jahr", "Fluge pro Jahr", "Wie oft fliegen Sie im Jahr?"])
     );
     const flightDistanceText = toText(
-      getCell(row, headerIndex, ["Flugstrecken", "Wenn Sie fliegen, welche Strecken fliegen Sie eher?"])
+      getCell(row, headerIndex, ["Flugstrecken", "Flugdistanz", "Wenn Sie fliegen, welche Strecken fliegen Sie eher?"])
     );
     const heatingTypeText = toText(getCell(row, headerIndex, ["Heizungsart", "Wie heizen Sie zu Hause?"]));
     const warmWaterTypeText = toText(
@@ -273,29 +209,18 @@ async function importSurvey(factors, userId) {
       ])
     ) || loadOptimizationText;
     const fireworkText = toText(getCell(row, headerIndex, ["Feuerwerk Nutzung", "Wie oft verwenden Sie Feuerwerk?"]));
-    const heatingSavingsText = toText(
-      getCell(row, headerIndex, [
-        "Heizungsregelung",
-        "Machen Sie etwas, um beim Heizen Energie und CO₂ zu sparen?",
-        "Machen Sie etwas, um beim Heizen Energie und CO2 zu sparen?",
-      ])
-    );
     const combinedFlightBehaviorText = toText(
       getCell(row, headerIndex, [
         "Verzicht auf Flugreisen/ Zug als Alternative",
+        "Verzicht auf Flugreisen; Zug als Alternative",
+        "Verzicht auf Flugreisen;  Zug als Alternative",
+        "Verzicht auf Flugreisen / Zug als Alternative",
       ])
     );
-    const flightAvoidanceText = toText(
-      getCell(row, headerIndex, [
-        "Verzicht auf Flugreisen",
-        "Verzicht Flugreisen",
-        "Verzichten Sie auf Flugreisen oder nutzen Alternativen wie Zug?",
-        "Verzicht auf Flugreisen/ Zug als Alternative",
-      ])
-    ) || combinedFlightBehaviorText;
     const shortHaulTrainAlternativeText = toText(
       getCell(row, headerIndex, [
         "Kurzstrecken Zug Alternative",
+        "Zug als Alternative",
         "Würden Sie bei Kurzstrecken Alternativen wie Zug nutzen?",
       ])
     ) || mapCombinedFlightAnswerToShortHaul(combinedFlightBehaviorText);
@@ -334,10 +259,8 @@ async function importSurvey(factors, userId) {
       officeDaysText,
       transportMainText,
       distanceText,
-      commuteTimeText,
       flightsPerYearText,
       flightDistanceText,
-      flightAvoidanceText,
       heatingTypeText,
       warmWaterTypeText,
       usesGreenElectricityText,
@@ -363,8 +286,6 @@ async function importSurvey(factors, userId) {
         warmWaterTypeText,
         usesGreenElectricityText,
         smartElectricityUsageText,
-        heatingSavingsText,
-        flightAvoidanceText,
         shortHaulTrainAlternativeText,
         shoppingTransportEcoChoiceText,
         usesEnergyEfficientAppliancesText,
@@ -387,15 +308,12 @@ async function importSurvey(factors, userId) {
         alternativeTransportFreq: alternativeTransportFreqText || null,
         alternativeTransport: alternativeTransportText || null,
         distanceKm: calc.parseDistanceKm(distanceText),
-        commuteTime: commuteTimeText || null,
         carType: carTypeText || null,
         flightsPerYear: flightsPerYearText || null,
         flightDistanceKm: flightDistanceText || null,
-        flightAvoidance: flightAvoidanceText || null,
         shortHaulTrainAlternative: shortHaulTrainAlternativeText || null,
         heatingType: heatingTypeText || "UNKNOWN",
         warmWaterType: warmWaterTypeText || "UNKNOWN",
-        heatingSavings: heatingSavingsText || null,
         usesGreenElectricity: usesGreenElectricityText || null,
         greenElectricityType: greenElectricityTypeText || null,
         smartElectricityUsage: smartElectricityUsageText || null,
