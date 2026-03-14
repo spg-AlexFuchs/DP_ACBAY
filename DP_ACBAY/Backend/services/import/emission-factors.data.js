@@ -190,19 +190,19 @@ module.exports = [
   {
     "category": "flight",
     "label": "Flugreisen Kurzstrecke (<1500 km)",
-    "valueNumber": 225000,
+    "valueNumber": 203060,
     "unit": "g/Flug (Hin & Rück)"
   },
   {
     "category": "flight",
     "label": "Flugreisen Mittelstrecke (1500–3500 km)",
-    "valueNumber": 750000,
+    "valueNumber": 402610,
     "unit": "g/Flug (Hin & Rück)"
   },
   {
     "category": "flight",
     "label": "Flugreisen Langstrecke (>3500 km)",
-    "valueNumber": 1500000,
+    "valueNumber": 856350,
     "unit": "g/Flug (Hin & Rück)"
   },
   {
