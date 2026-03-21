@@ -16,9 +16,9 @@
             <div class="page-header-badge">
               Mein Bereich
             </div>
-            <h1 class="page-header-title">Umfragewerte eingeben</h1>
+            <h1 class="page-header-title">CO2-Daten eingeben</h1>
             <p class="page-header-subtitle">
-              Hier kannst du die Auswertungs-/Umfragewerte manuell eingeben, die sonst aus der Excel-Datei kommen.
+              Hier kannst du deine CO2-Emissionen berechnen.
             </p>
           </div>
           <a href="index.html" class="btn-header-back">
@@ -29,7 +29,7 @@
 
       <main class="mt-6">
         <section class="surface-card">
-            <h2 class="text-xl font-semibold">Umfragewerte (manuelle Eingabe)</h2>
+            <h2 class="text-xl font-semibold">CO2-Daten (manuelle Eingabe)</h2>
           <p class="mt-1 text-sm text-slate-500">Fragen und Felder sind auf das aktuelle Excel-Schema abgestimmt.</p>
 
           <form class="mt-4 space-y-6" id="surveyForm">
@@ -239,7 +239,7 @@
                   Bearbeiten
                 </button>
                 <button id="saveSurveyBtn" type="submit" class="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50" disabled>
-                  Umfragewerte speichern
+                 Speichern
                 </button>
               </div>
               <p id="surveyMessage" class="mt-3 min-h-[1.25rem] text-sm text-slate-600"></p>
@@ -249,7 +249,7 @@
 
         <section class="surface-card mt-6">
           <h2 class="text-xl font-semibold">Mein CO2 Verbrauch</h2>
-          <p class="mt-1 text-sm text-slate-500">Übersicht basierend auf Ihren zuletzt gespeicherten Umfragewerten.</p>
+          <p class="mt-1 text-sm text-slate-500">Übersicht basierend auf Ihren zuletzt gespeicherten Daten.</p>
 
           <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div class="text-sm text-slate-600">Gesamtverbrauch</div>
@@ -492,7 +492,7 @@
           return;
         }
 
-        myCo2HintEl.textContent = "Die Diagramme zeigen die Aufteilung Ihrer letzten gespeicherten Umfrage.";
+        myCo2HintEl.textContent = "Die Diagramme zeigen die Aufteilung Ihrer letzten gespeicherten CO2-Daten.";
         destroyMyCharts();
 
         const pieCtx = document.getElementById("myCo2BreakdownChart");
@@ -574,7 +574,7 @@
             if (Number.isFinite(fallbackTotal) && fallbackTotal > 0) {
               renderMyTotalOnly(
                 fallbackTotal,
-                "Aufteilung derzeit nicht verfügbar. Gesamtwert wird aus Ihrer gespeicherten Umfrage angezeigt."
+                "Aufteilung derzeit nicht verfügbar. Gesamtwert wird aus Ihren gespeicherten CO2-Daten angezeigt."
               );
             } else {
               myCo2TotalEl.textContent = "–";
@@ -586,7 +586,7 @@
 
           if (!data?.hasData) {
             myCo2TotalEl.textContent = "–";
-            myCo2HintEl.textContent = "Noch keine gespeicherte Umfrage vorhanden.";
+            myCo2HintEl.textContent = "Noch keine gespeicherte CO2-Daten vorhanden.";
             destroyMyCharts();
             return;
           }
@@ -603,7 +603,7 @@
         const { silent = false } = options;
         if (!token) {
           if (!silent) {
-            setMessage("Bitte zuerst einloggen, um Umfragewerte speichern zu können.", true);
+            setMessage("Bitte zuerst einloggen, um CO2-Daten speichern zu können.", true);
           }
           return [];
         }
@@ -615,7 +615,7 @@
           const rows = await response.json().catch(() => []);
           if (!response.ok) {
             if (!silent) {
-              setMessage("Umfragewerte konnten nicht geladen werden.", true);
+              setMessage("Daten konnten nicht geladen werden.", true);
             }
             return [];
           }
@@ -629,18 +629,18 @@
             } else if (Number(rows[0]?.totalCo2Kg || 0) > 0) {
               renderMyTotalOnly(
                 Number(rows[0].totalCo2Kg || 0),
-                "Aufteilung wird geladen. Gesamtwert stammt aus Ihrer letzten gespeicherten Umfrage."
+                "Aufteilung wird geladen. Gesamtwert stammt aus Ihrer letzten gespeicherten CO2-Daten."
               );
             }
             if (!silent) {
-              setMessage("Vorhandene Umfragewerte geladen. Mit 'Bearbeiten' können Sie Änderungen vornehmen.");
+              setMessage("Vorhandene CO2-Daten geladen. Mit 'Bearbeiten' können Sie Änderungen vornehmen.");
             }
           } else {
             myCo2TotalEl.textContent = "–";
-            myCo2HintEl.textContent = "Noch keine gespeicherte Umfrage vorhanden.";
+            myCo2HintEl.textContent = "Noch keine gespeicherte CO2-Daten vorhanden.";
             destroyMyCharts();
             if (!silent) {
-              setMessage("Noch keine gespeicherten Umfragewerte. Mit 'Bearbeiten' können Sie neue Werte eingeben.");
+              setMessage("Noch keine gespeicherten CO2-Daten. Mit 'Bearbeiten' können Sie neue Werte eingeben.");
             }
           }
           return cachedMySurveyRows;
@@ -658,7 +658,7 @@
           return;
         }
         setFormLocked(false);
-        setMessage("Bearbeitungsmodus aktiv. Änderungen mit 'Umfragewerte speichern' sichern.");
+        setMessage("Bearbeitungsmodus aktiv. Änderungen mit 'CO2-Daten speichern' sichern.");
       });
 
       form.addEventListener("submit", async (event) => {
@@ -692,7 +692,7 @@
           const co2 = Number.isFinite(Number(data.totalCo2Kg))
             ? ` (CO2: ${Number(data.totalCo2Kg).toFixed(2)} kg)`
             : "";
-          setMessage(`Umfrage erfolgreich ${mode}.${co2}`);
+          setMessage(`Speicherung erfolgreich ${mode}.${co2}`);
           setFormLocked(true);
           if (data.components && typeof data.components === "object") {
             renderMyCharts(Number(data.totalCo2Kg || 0), data.components);
