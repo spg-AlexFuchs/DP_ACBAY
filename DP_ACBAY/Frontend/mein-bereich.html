@@ -16,9 +16,9 @@
             <div class="page-header-badge">
               Mein Bereich
             </div>
-            <h1 class="page-header-title">CO2-Daten eingeben</h1>
+            <h1 class="page-header-title">CO₂-Daten eingeben</h1>
             <p class="page-header-subtitle">
-              Hier kannst du deine CO2-Emissionen berechnen.
+              Hier kannst du deine CO₂-Emissionen berechnen.
             </p>
           </div>
           <a href="index.html" class="btn-header-back">
@@ -29,8 +29,8 @@
 
       <main class="mt-6">
         <section class="surface-card">
-            <h2 class="text-xl font-semibold">CO2-Daten (manuelle Eingabe)</h2>
-          <p class="mt-1 text-sm text-slate-500">Fragen und Felder sind auf das aktuelle Excel-Schema abgestimmt.</p>
+            <h2 class="text-xl font-semibold">CO₂-Daten (manuelle Eingabe)</h2>
+          <p class="mt-1 text-sm text-slate-900">Fragen und Felder sind auf die Datenbank abgestimmt.</p>
 
           <form class="mt-4 space-y-6" id="surveyForm">
             <div>
@@ -248,30 +248,30 @@
         </section>
 
         <section class="surface-card mt-6">
-          <h2 class="text-xl font-semibold">Mein CO2 Verbrauch</h2>
-          <p class="mt-1 text-sm text-slate-500">Übersicht basierend auf Ihren zuletzt gespeicherten Daten.</p>
+          <h2 class="text-xl font-semibold">Mein CO₂ Verbrauch</h2>
+          <p class="mt-1 text-sm text-slate-900">Übersicht basierend auf Ihren zuletzt gespeicherten Daten.</p>
 
           <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div class="text-sm text-slate-600">Gesamtverbrauch</div>
+            <div class="text-sm text-slate-900">Gesamtverbrauch</div>
             <div id="myCo2Total" class="mt-1 text-3xl font-bold text-slate-900">–</div>
           </div>
 
           <div class="mt-4 grid gap-4 md:grid-cols-2">
             <div class="rounded-xl border border-slate-200 p-4">
-              <h3 class="text-sm font-semibold text-slate-800">Aufteilung nach Bereichen</h3>
+              <h3 class="text-sm font-semibold text-slate-900">Aufteilung nach Bereichen</h3>
               <div class="mt-3" style="height: 280px;">
                 <canvas id="myCo2BreakdownChart" style="width: 100%; height: 100%; display: block;"></canvas>
               </div>
             </div>
             <div class="rounded-xl border border-slate-200 p-4">
-              <h3 class="text-sm font-semibold text-slate-800">Komponenten in kg/Jahr</h3>
+              <h3 class="text-sm font-semibold text-slate-900">Komponenten in kg/Jahr</h3>
               <div class="mt-3" style="height: 280px;">
                 <canvas id="myCo2BarsChart" style="width: 100%; height: 100%; display: block;"></canvas>
               </div>
             </div>
           </div>
 
-          <p id="myCo2Hint" class="mt-3 min-h-[1.25rem] text-sm text-slate-500"></p>
+          <p id="myCo2Hint" class="mt-3 min-h-[1.25rem] text-sm text-slate-900"></p>
         </section>
       </main>
     </div>
@@ -282,7 +282,7 @@
           <a href="datenschutz.html" class="footer-link">Datenschutz</a>
           <a href="kontakt.html" class="footer-link">Kontakt</a>
           <a href="esg.html" class="footer-link">ESG</a>
-          <a href="co2.html" class="footer-link">CO2</a>
+            <a href="co2.html" class="footer-link">CO₂</a>
         </nav>
       </div>
     </footer>
@@ -488,11 +488,11 @@
 
         if (!hasPositiveValues) {
           destroyMyCharts();
-          myCo2HintEl.textContent = "Noch keine verwertbaren CO2-Komponenten vorhanden.";
+          myCo2HintEl.textContent = "Noch keine verwertbaren CO₂-Komponenten vorhanden.";
           return;
         }
 
-        myCo2HintEl.textContent = "Die Diagramme zeigen die Aufteilung Ihrer letzten gespeicherten CO2-Daten.";
+        myCo2HintEl.textContent = "Die Diagramme zeigen die Aufteilung Ihrer letzten gespeicherten CO₂-Daten.";
         destroyMyCharts();
 
         const pieCtx = document.getElementById("myCo2BreakdownChart");
@@ -512,7 +512,16 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { position: "bottom" },
+              legend: {
+                position: "bottom",
+                labels: {
+                  color: "#0f172a",
+                },
+              },
+              tooltip: {
+                titleColor: "#ffffff",
+                bodyColor: "#ffffff",
+              },
             },
           },
         });
@@ -532,10 +541,24 @@
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              y: { beginAtZero: true },
+              x: {
+                ticks: {
+                  color: "#0f172a",
+                },
+              },
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  color: "#0f172a",
+                },
+              },
             },
             plugins: {
               legend: { display: false },
+              tooltip: {
+                titleColor: "#ffffff",
+                bodyColor: "#ffffff",
+              },
             },
           },
         });
@@ -578,7 +601,7 @@
               );
             } else {
               myCo2TotalEl.textContent = "–";
-              myCo2HintEl.textContent = "Persönliche CO2-Daten konnten nicht geladen werden.";
+              myCo2HintEl.textContent = "Persönliche CO₂-Daten konnten nicht geladen werden.";
               destroyMyCharts();
             }
             return;
@@ -586,7 +609,7 @@
 
           if (!data?.hasData) {
             myCo2TotalEl.textContent = "–";
-            myCo2HintEl.textContent = "Noch keine gespeicherte CO2-Daten vorhanden.";
+            myCo2HintEl.textContent = "Noch keine gespeicherte CO₂-Daten vorhanden.";
             destroyMyCharts();
             return;
           }
@@ -603,7 +626,7 @@
         const { silent = false } = options;
         if (!token) {
           if (!silent) {
-            setMessage("Bitte zuerst einloggen, um CO2-Daten speichern zu können.", true);
+            setMessage("Bitte zuerst einloggen, um CO₂-Daten speichern zu können.", true);
           }
           return [];
         }
@@ -629,18 +652,18 @@
             } else if (Number(rows[0]?.totalCo2Kg || 0) > 0) {
               renderMyTotalOnly(
                 Number(rows[0].totalCo2Kg || 0),
-                "Aufteilung wird geladen. Gesamtwert stammt aus Ihrer letzten gespeicherten CO2-Daten."
+                "Aufteilung wird geladen. Gesamtwert stammt aus Ihrer letzten gespeicherten CO₂-Daten."
               );
             }
             if (!silent) {
-              setMessage("Vorhandene CO2-Daten geladen. Mit 'Bearbeiten' können Sie Änderungen vornehmen.");
+              setMessage("Vorhandene CO₂-Daten geladen. Mit 'Bearbeiten' können Sie Änderungen vornehmen.");
             }
           } else {
             myCo2TotalEl.textContent = "–";
-            myCo2HintEl.textContent = "Noch keine gespeicherte CO2-Daten vorhanden.";
+            myCo2HintEl.textContent = "Noch keine gespeicherte CO₂-Daten vorhanden.";
             destroyMyCharts();
             if (!silent) {
-              setMessage("Noch keine gespeicherten CO2-Daten. Mit 'Bearbeiten' können Sie neue Werte eingeben.");
+              setMessage("Noch keine gespeicherten CO₂-Daten. Mit 'Bearbeiten' können Sie neue Werte eingeben.");
             }
           }
           return cachedMySurveyRows;
@@ -658,7 +681,7 @@
           return;
         }
         setFormLocked(false);
-        setMessage("Bearbeitungsmodus aktiv. Änderungen mit 'CO2-Daten speichern' sichern.");
+        setMessage("Bearbeitungsmodus aktiv. Änderungen mit 'CO₂-Daten speichern' sichern.");
       });
 
       form.addEventListener("submit", async (event) => {
@@ -690,7 +713,7 @@
 
           const mode = data.updated ? "aktualisiert" : "neu gespeichert";
           const co2 = Number.isFinite(Number(data.totalCo2Kg))
-            ? ` (CO2: ${Number(data.totalCo2Kg).toFixed(2)} kg)`
+            ? ` (CO₂: ${Number(data.totalCo2Kg).toFixed(2)} kg)`
             : "";
           setMessage(`Speicherung erfolgreich ${mode}.${co2}`);
           setFormLocked(true);

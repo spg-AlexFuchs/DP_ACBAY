@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EVN AG | CO2 Dashboard</title>
+    <title>EVN AG | CO₂ Dashboard</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="evn-colors.css" />
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
@@ -17,11 +17,11 @@
         <div class="page-header-inner">
           <div>
             <div class="page-header-badge">
-              CO2 Dashboard
+              CO₂ Dashboard
             </div>
             <h1 class="page-header-title">Nachhaltigkeitsbericht</h1>
             <p class="page-header-subtitle">
-              Verfolgen Sie Ihre CO2-Emissionen und tragen Sie zu einer nachhaltigen Zukunft bei.
+              Verfolgen Sie Ihre CO₂-Emissionen und tragen Sie zu einer nachhaltigen Zukunft bei.
             </p>
           </div>
           <div class="flex flex-col items-end gap-2">
@@ -144,8 +144,8 @@
           <div class="mt-5 grid gap-4 md:grid-cols-2">
             <!-- Overall CO2 Areas Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Gesamt-CO2 nach Bereichen (ohne Konsum)</div>
-              <div class="mb-2 text-[11px] text-slate-500">Hinweis: Gesamtsumme je Bereich (kg CO2/Jahr), Konsum ist hier ausgeblendet.</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-900">Gesamt-CO₂ nach Bereichen (ohne Konsum)</div>
+              <div class="mb-2 text-[11px] text-slate-900">Hinweis: Gesamtsumme je Bereich (kg CO₂/Jahr), Konsum ist hier ausgeblendet.</div>
               <div class="h-56">
                 <canvas id="overallCo2Chart"></canvas>
               </div>
@@ -153,7 +153,7 @@
 
             <!-- Electricity Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Ökostrom Nutzung</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-900">Ökostrom Nutzung</div>
               <div class="h-56">
                 <canvas id="electricityChart"></canvas>
               </div>
@@ -161,7 +161,7 @@
 
             <!-- Transport Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Transport-Verteilung</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-900">Transport-Verteilung</div>
               <div class="h-56">
                 <canvas id="transportChart"></canvas>
               </div>
@@ -169,8 +169,8 @@
 
             <!-- CO2 Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Pendel-CO2 Summe nach Transport</div>
-              <div class="mb-2 text-[11px] text-slate-500">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO2/Jahr).</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-900">Pendel-CO₂ Summe nach Transport</div>
+              <div class="mb-2 text-[11px] text-slate-900">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO₂/Jahr).</div>
               <div class="h-56">
                 <canvas id="transportCo2Chart"></canvas>
               </div>
@@ -178,7 +178,7 @@
 
             <!-- Flight Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Flugstrecken-Verteilung</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-900">Flugstrecken-Verteilung</div>
               <div class="h-56">
                 <canvas id="flightChart"></canvas>
               </div>
@@ -186,8 +186,8 @@
 
             <!-- Flight CO2 Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">CO2 Summe nach Flügen</div>
-              <div class="mb-2 text-[11px] text-slate-500">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO2/Jahr).</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-900">CO₂ Summe nach Flügen</div>
+              <div class="mb-2 text-[11px] text-slate-900">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO₂/Jahr).</div>
               <div class="h-56">
                 <canvas id="flightCo2Chart"></canvas>
               </div>
@@ -195,7 +195,7 @@
 
             <!-- Heating Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Heizungsarten</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-900">Heizungsarten</div>
               <div class="h-56">
                 <canvas id="heatingChart"></canvas>
               </div>
@@ -203,8 +203,8 @@
 
             <!-- Heating CO2 Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">CO2 Summe nach Heizungsart</div>
-              <div class="mb-2 text-[11px] text-slate-500">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO2/Jahr).</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-900">CO₂ Summe nach Heizungsart</div>
+              <div class="mb-2 text-[11px] text-slate-900">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO₂/Jahr).</div>
               <div class="h-56">
                 <canvas id="heatingCo2Chart"></canvas>
               </div>
@@ -212,7 +212,7 @@
 
             <!-- Warm Water Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">Warmwasser Erzeugung</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-900">Warmwasser Erzeugung</div>
               <div class="h-56">
                 <canvas id="warmWaterChart"></canvas>
               </div>
@@ -220,8 +220,8 @@
 
             <!-- Warm Water CO2 Chart -->
             <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div class="mb-2 text-xs uppercase tracking-wide text-slate-500">CO2 Summe nach Warmwasser Erzeugung</div>
-              <div class="mb-2 text-[11px] text-slate-500">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO2/Jahr).</div>
+              <div class="mb-2 text-xs uppercase tracking-wide text-slate-900">CO₂ Summe nach Warmwasser Erzeugung</div>
+              <div class="mb-2 text-[11px] text-slate-900">Hinweis: Gesamtsumme aller Personen je Kategorie (kg CO₂/Jahr).</div>
               <div class="h-56">
                 <canvas id="warmWaterCo2Chart"></canvas>
               </div>
@@ -246,7 +246,7 @@
             <a href="datenschutz.html" class="footer-link">Datenschutz</a>
             <a href="kontakt.html" class="footer-link">Kontakt</a>
             <a href="esg.html" class="footer-link">ESG</a>
-            <a href="co2.html" class="footer-link">CO2</a>
+            <a href="co2.html" class="footer-link">CO₂</a>
           </nav>
 
         </div>
@@ -682,7 +682,7 @@
               hoverOffset: 24,
             }],
           },
-          options: chartOptions((label, value) => `${label}: ${value} kg CO2 gesamt`),
+          options: chartOptions((label, value) => `${label}: ${value} kg CO₂ gesamt`),
         });
 
         transportCo2Chart = new Chart(document.getElementById("transportCo2Chart"), {
@@ -690,7 +690,7 @@
           data: {
             labels: sortedTransportCo2.labels,
             datasets: [{
-              label: "kg CO2 gesamt",
+              label: "kg CO₂ gesamt",
               data: sortedTransportCo2.data,
               backgroundColor: "rgba(249, 115, 22, 0.85)",
               borderColor: "#f97316",
@@ -699,7 +699,7 @@
             }],
           },
           options: {
-            ...chartOptions((label, value) => `${label}: ${value} kg CO2 gesamt`),
+            ...chartOptions((label, value) => `${label}: ${value} kg CO₂ gesamt`),
             scales: { x: { ticks: { color: "#334155" } }, y: { beginAtZero: true, ticks: { color: "#334155" } } },
           },
         });
@@ -757,7 +757,7 @@
           data: {
             labels: sortedFlightCo2.labels,
             datasets: [{
-              label: "kg CO2 gesamt",
+              label: "kg CO₂ gesamt",
               data: sortedFlightCo2.data,
               backgroundColor: "rgba(168, 85, 247, 0.85)",
               borderColor: "#a855f7",
@@ -766,7 +766,7 @@
             }],
           },
           options: {
-            ...chartOptions((label, value) => `${label}: ${value} kg CO2 gesamt`),
+            ...chartOptions((label, value) => `${label}: ${value} kg CO₂ gesamt`),
             scales: { x: { ticks: { color: "#334155" } }, y: { beginAtZero: true, ticks: { color: "#334155" } } },
           },
         });
@@ -776,7 +776,7 @@
           data: {
             labels: sortedHeatingCo2.labels,
             datasets: [{
-              label: "kg CO2 gesamt",
+              label: "kg CO₂ gesamt",
               data: sortedHeatingCo2.data,
               backgroundColor: "rgba(15, 118, 110, 0.85)",
               borderColor: "#0f766e",
@@ -785,7 +785,7 @@
             }],
           },
           options: {
-            ...chartOptions((label, value) => `${label}: ${value} kg CO2 gesamt`),
+            ...chartOptions((label, value) => `${label}: ${value} kg CO₂ gesamt`),
             scales: { x: { ticks: { color: "#334155" } }, y: { beginAtZero: true, ticks: { color: "#334155" } } },
           },
         });
@@ -795,7 +795,7 @@
           data: {
             labels: sortedWarmWaterCo2.labels,
             datasets: [{
-              label: "kg CO2 gesamt",
+              label: "kg CO₂ gesamt",
               data: sortedWarmWaterCo2.data,
               backgroundColor: "rgba(14, 165, 233, 0.85)",
               borderColor: "#0ea5e9",
@@ -804,7 +804,7 @@
             }],
           },
           options: {
-            ...chartOptions((label, value) => `${label}: ${value} kg CO2 gesamt`),
+            ...chartOptions((label, value) => `${label}: ${value} kg CO₂ gesamt`),
             scales: { x: { ticks: { color: "#334155" } }, y: { beginAtZero: true, ticks: { color: "#334155" } } },
           },
         });
@@ -1022,7 +1022,7 @@
           <!-- Logo and Tagline -->
           <div class="flex items-center gap-4 text-center">
             <img src="GetSmartLogo.png" alt="Get Smart Logo" class="h-16 w-auto" />
-            <p class="text-base text-slate-600 md:text-lg">Get Smart "Die kluge Webseite für CO2-Einsparung"</p>
+            <p class="text-base text-slate-600 md:text-lg">Get Smart "Die kluge Webseite für CO₂-Einsparung"</p>
           </div>
           
         </div>
